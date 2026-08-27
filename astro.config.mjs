@@ -17,8 +17,8 @@ export default defineConfig({
   },
   integrations: [
     starlight({
-      title: 'AI 学习站',
-      description: 'AI 知识库与技术教程',
+      title: '思维向量',
+      description: 'AI 知识库与技术教程 — 思想的高维空间',
       defaultLocale: 'zh-CN',
       customCss: ['./src/styles/global.css'],
       social: [
