@@ -1,0 +1,209 @@
+---
+title: Python 基础
+description: NumPy、Pandas、Matplotlib——机器学习必备 Python 工具链
+---
+
+## Python 机器学习工具链
+
+Python 是 AI 开发的主流语言。掌握 NumPy、Pandas、Matplotlib 三个库，就具备了处理数据、实现算法的基本功。
+
+### NumPy：数值计算基石
+
+NumPy 的核心是 `ndarray`——多维数组，所有元素类型相同，内存连续，运算速度远超 Python 列表。
+
+```python
+import numpy as np
+
+# 创建数组
+a = np.array([1, 2, 3, 4, 5])          # 一维
+b = np.zeros((3, 4))                     # 全零矩阵
+c = np.ones((2, 3))                      # 全一矩阵
+d = np.eye(3)                            # 单位矩阵
+e = np.arange(0, 10, 2)                  # [0, 2, 4, 6, 8]
+f = np.linspace(0, 1, 5)                 # 等间距 5 个点
+g = np.random.randn(3, 3)                # 标准正态分布随机矩阵
+
+print(f"形状: {a.shape}, 维度: {a.ndim}, 类型: {a.dtype}")
+```
+
+#### 索引与切片
+
+```python
+arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+print(arr[0, 0])      # 1
+print(arr[0, :])      # [1, 2, 3] — 第一行
+print(arr[:, 1])      # [2, 5, 8] — 第二列
+print(arr[1:, :2])    # [[4,5],[7,8]] — 子矩阵
+
+# 布尔索引
+mask = arr > 5
+print(arr[mask])      # [6, 7, 8, 9]
+```
+
+#### 广播机制
+
+形状不同的数组在运算时，NumPy 自动扩展维度：
+
+```python
+a = np.array([[1, 2, 3], [4, 5, 6]])  # (2, 3)
+b = np.array([10, 20, 30])            # (3,)
+
+print(a + b)  # [[11,22,33], [14,25,36]]
+# b 被自动"广播"成 (2,3)，与 a 逐元素相加
+```
+
+#### 常用运算
+
+```python
+x = np.array([1, 2, 3, 4, 5])
+
+# 统计
+print(np.mean(x))    # 3.0
+print(np.std(x))     # 1.41
+print(np.min(x))     # 1
+print(np.argmax(x))  # 4 — 最大值的索引
+
+# 线性代数
+A = np.array([[1, 2], [3, 4]])
+B = np.array([[5, 6], [7, 8]])
+print(A @ B)                        # 矩阵乘法
+print(np.linalg.inv(A))             # 逆矩阵
+print(np.linalg.eig(A))             # 特征值、特征向量
+
+# 变形
+print(x.reshape(5, 1))              # (5,) → (5, 1)
+print(x[:, np.newaxis])             # 另一种增加维度的方法
+```
+
+### Pandas：数据处理
+
+Pandas 提供 `DataFrame`（表格）和 `Series`（单列），让数据操作像 SQL 一样直观。
+
+```python
+import pandas as pd
+
+# 创建 DataFrame
+df = pd.DataFrame({
+    "name":   ["Alice", "Bob", "Charlie", "Diana"],
+    "age":    [25, 30, 35, 28],
+    "salary": [50000, 60000, 80000, 55000],
+    "dept":   ["HR", "Eng", "Eng", "HR"],
+})
+
+# 基本操作
+print(df.head(2))          # 前两行
+print(df.shape)            # (4, 4)
+print(df.dtypes)           # 每列类型
+print(df.describe())       # 数值列统计摘要
+```
+
+#### 数据筛选
+
+```python
+# 单条件
+print(df[df["age"] > 28])
+
+# 多条件
+print(df[(df["age"] > 28) & (df["dept"] == "Eng")])
+
+# 选择列
+print(df[["name", "salary"]])
+print(df.loc[0:2, "name":"salary"])   # 按标签
+print(df.iloc[0:2, 1:3])              # 按位置
+```
+
+#### 分组聚合
+
+```python
+# 按部门统计平均薪资
+print(df.groupby("dept")["salary"].mean())
+
+# 多指标聚合
+print(df.groupby("dept").agg({
+    "salary": ["mean", "max", "count"],
+    "age": "mean",
+}))
+```
+
+#### 数据清洗
+
+```python
+# 缺失值处理
+df2 = pd.DataFrame({"a": [1, None, 3], "b": [4, 5, None]})
+print(df2.isnull().sum())    # 统计缺失值
+df2 = df2.fillna(0)          # 填充缺失值
+df2 = df2.dropna()           # 删除缺失值行
+
+# 去重
+df = df.drop_duplicates()
+
+# 类型转换
+df["age"] = df["age"].astype(float)
+
+# 重命名列
+df = df.rename(columns={"dept": "department"})
+```
+
+### Matplotlib：可视化
+
+```python
+import matplotlib.pyplot as plt
+
+# 折线图
+x = np.linspace(0, 10, 100)
+plt.plot(x, np.sin(x), label="sin(x)")
+plt.plot(x, np.cos(x), label="cos(x)")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("sin and cos")
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
+
+# 散点图
+x = np.random.randn(100)
+y = 2 * x + np.random.randn(100) * 0.5
+plt.scatter(x, y, alpha=0.6, c=np.abs(x), cmap="viridis")
+plt.colorbar(label="|x|")
+plt.show()
+
+# 直方图
+data = np.random.randn(1000)
+plt.hist(data, bins=30, edgecolor="white", alpha=0.7)
+plt.axvline(data.mean(), color="red", linestyle="--", label=f"均值={data.mean():.2f}")
+plt.legend()
+plt.show()
+```
+
+### 实战：分析鸢尾花数据集
+
+```python
+from sklearn.datasets import load_iris
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# 加载数据
+iris = load_iris()
+df = pd.DataFrame(iris.data, columns=iris.feature_names)
+df["species"] = iris.target
+
+# 数据概览
+print(df.groupby("species").mean())
+
+# 可视化
+fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+for i, feature in enumerate(iris.feature_names[:3]):
+    for species in range(3):
+        subset = df[df["species"] == species]
+        axes[i].hist(subset[feature], alpha=0.5, label=iris.target_names[species], bins=15)
+    axes[i].set_title(feature)
+    axes[i].legend(fontsize=7)
+plt.tight_layout()
+plt.show()
+```
+
+### 相关页面
+
+- [机器学习基础](/tutorials/ml-basics/) — 用这些工具实现算法
+- [经典算法](/tutorials/ml-basics/classic-algorithms/) — 下一步：线性回归
