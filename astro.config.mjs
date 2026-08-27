@@ -33,7 +33,7 @@ export default defineConfig({
         {
           label: '🏠 开始',
           items: [
-            { label: '首页', slug: '' },
+            { label: '首页', link: '/' },
             { label: '学习路线图', slug: 'roadmap' },
           ],
         },
