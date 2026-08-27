@@ -31,6 +31,12 @@
   padding-bottom: 0 !important;
   padding-top: 1rem !important;
 }
+.sl-hero .sl-hero-actions {
+  margin-bottom: 0 !important;
+}
+.sl-hero p {
+  margin-bottom: 0.5rem !important;
+}
 
 /* 链接 hover 效果 */
 .sl-markdown-content a {
