@@ -71,7 +71,7 @@ nav.sidebar {
   border-bottom: none;
 }
 .sl-markdown-content tbody tr:hover {
-  background: var(--sl-color-gray-1);
+  background: rgba(128, 128, 128, 0.08);
 }
 
 /* ---- 图片 ---- */
