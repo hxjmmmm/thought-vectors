@@ -222,10 +222,13 @@ input[data-pagefind-filter] {
   border-radius: 0.75rem;
   transition: border-color 0.2s, box-shadow 0.2s;
   min-height: 4.5rem;
+  text-decoration: none;
+  color: inherit;
 }
 .roadmap-item:hover {
   border-color: var(--sl-color-text-accent);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  text-decoration: none;
 }
 .roadmap-item strong {
   font-size: 0.95rem;
