@@ -151,11 +151,25 @@ input[data-pagefind-filter] {
   border: 1px solid var(--sl-color-gray-4);
   border-radius: 0.75rem;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  position: relative;
 }
 .home-feature-card:hover {
   border-color: var(--sl-color-text-accent);
   box-shadow: 0 4px 16px rgba(0,0,0,0.06);
   transform: translateY(-2px);
+}
+.home-feature-card a {
+  color: var(--sl-color-text-accent);
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-decoration: none;
+  margin-top: 0.5rem;
+  display: inline-block;
+}
+.home-feature-card a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
 }
 .home-feature-card h3 {
   margin-top: 0;
