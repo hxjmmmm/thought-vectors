@@ -1,0 +1,79 @@
+---
+title: 经典算法
+description: 线性回归、逻辑回归、决策树——机器学习经典算法详解
+---
+
+## 经典机器学习算法
+
+### 线性回归
+
+预测连续值。假设目标值 $y$ 是特征 $x$ 的线性组合：
+
+$$
+y = w_0 + w_1x_1 + w_2x_2 + ... + w_nx_n
+$$
+
+```python
+from sklearn.linear_model import LinearRegression
+from sklearn.datasets import make_regression
+
+X, y = make_regression(n_samples=200, n_features=3, noise=10)
+model = LinearRegression()
+model.fit(X, y)
+
+print(f"权重: {model.coef_}")
+print(f"偏置: {model.intercept_:.2f}")
+print(f"R²: {model.score(X, y):.3f}")
+```
+
+### 逻辑回归
+
+分类问题，用 Sigmoid 将输出映射到 $[0, 1]$：
+
+$$
+P(y=1|x) = \frac{1}{1 + e^{-(wx+b)}}
+$$
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=200, n_features=4)
+model = LogisticRegression()
+model.fit(X, y)
+
+print(f"准确率: {model.score(X, y):.3f}")
+print(f"预测概率: {model.predict_proba(X[:3])}")
+```
+
+### 决策树
+
+通过递归分裂数据，构建树形决策规则：
+
+```python
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import tree
+
+model = DecisionTreeClassifier(max_depth=3)
+model.fit(X, y)
+
+# 可视化
+print(tree.export_text(model))
+```
+
+### KNN：最近邻分类
+
+新样本的类别由最近的 K 个邻居投票决定：
+
+```python
+from sklearn.neighbors import KNeighborsClassifier
+
+model = KNeighborsClassifier(n_neighbors=5)
+model.fit(X, y)
+print(f"准确率: {model.score(X, y):.3f}")
+```
+
+### 相关页面
+
+- [机器学习基础](/tutorials/ml-basics/) — 从线性回归开始
+- [深度学习入门](/tutorials/deep-learning/) — 进入神经网络
