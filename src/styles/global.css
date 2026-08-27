@@ -44,12 +44,34 @@ nav.sidebar {
 /* ---- 表格 ---- */
 .sl-markdown-content table {
   font-size: 0.875rem;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.sl-markdown-content thead {
+  background: var(--sl-color-gray-1);
 }
 .sl-markdown-content th {
-  background: var(--sl-color-gray-1);
   font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--sl-color-gray-3);
+  text-align: left;
+}
+.sl-markdown-content td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--sl-color-gray-4);
+}
+.sl-markdown-content tbody tr:last-child td {
+  border-bottom: none;
+}
+.sl-markdown-content tbody tr:hover {
+  background: var(--sl-color-gray-1);
 }
 
 /* ---- 图片 ---- */
@@ -161,4 +183,50 @@ input[data-pagefind-filter] {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
+}
+
+/* ===== 路线图 ===== */
+.roadmap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.roadmap-stage h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+}
+.roadmap-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+.roadmap-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--sl-color-gray-4);
+  border-radius: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.roadmap-item:hover {
+  border-color: var(--sl-color-text-accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.roadmap-item strong {
+  font-size: 0.95rem;
+  color: var(--sl-color-text);
+}
+.roadmap-item span {
+  font-size: 0.8rem;
+  color: var(--sl-color-gray-2);
+}
+.roadmap-item small {
+  font-size: 0.72rem;
+  color: var(--sl-color-text-accent);
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+@media (max-width: 768px) {
+  .roadmap-items { grid-template-columns: 1fr; }
 }
