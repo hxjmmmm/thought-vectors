@@ -1,25 +1,116 @@
 ---
 title: 大模型原理与实践
-description: 深入理解大语言模型的工作原理
+description: 理解大语言模型的训练、推理和优化
 ---
 
-## 大模型原理与实践
+## 大语言模型的工作原理
 
-本系列教程讲解大语言模型（LLM）的核心原理和实际应用。
+大语言模型本质上是**自回归语言模型**：给定前文，预测下一个 token。
 
-### 你将学到
+$$
+P(w_t | w_1, w_2, ..., w_{t-1})
+$$
 
-- 大模型的缩放法则（Scaling Laws）
-- 预训练、微调、对齐（RLHF/DPO）的完整流程
-- Tokenization 的原理和影响
-- 推理优化：量化、KV Cache、投机解码
-- 开源模型实战：Llama、Qwen、DeepSeek
+通过不断预测下一个词，模型学会了语言的结构、知识和推理能力。
 
-### 前置知识
+### 训练的三个阶段
 
-- Transformer 架构
-- Python 和 PyTorch 基础
+#### 1. 预训练 (Pre-training)
 
-### 教程目录
+在海量文本上学习语言规律。目标是最大化似然：
 
-> 📝 内容正在编写中，敬请期待。
+$$
+\mathcal{L} = \sum_{i} \log P(w_i | w_{<i}; \theta)
+$$
+
+```python
+# 预训练的核心：Causal Language Modeling
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model = AutoModelForCausalLM.from_pretrained("gpt2")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+
+text = "The capital of France is"
+inputs = tokenizer(text, return_tensors="pt")
+outputs = model(**inputs, labels=inputs["input_ids"])
+
+# 损失：预测下一个 token 的交叉熵
+print(f"Loss: {outputs.loss:.4f}")
+```
+
+#### 2. 监督微调 (SFT)
+
+用高质量的 prompt-answer 对来引导模型行为：
+
+```python
+from transformers import TrainingArguments, Trainer
+
+# 微调数据格式
+training_data = [
+    {"prompt": "解释什么是 Transformer", "answer": "Transformer 是..."},
+    {"prompt": "写一个排序函数",       "answer": "def sort(arr):\n    ..."},
+]
+
+training_args = TrainingArguments(
+    output_dir="./results",
+    num_train_epochs=3,
+    per_device_train_batch_size=4,
+    learning_rate=2e-5,
+)
+```
+
+#### 3. 对齐 (RLHF/DPO)
+
+让模型输出符合人类偏好。DPO（Direct Preference Optimization）是更简单的替代方案：
+
+```python
+# DPO 的核心思想：直接优化偏好对
+# 给定: prompt x, 偏好回答 y_w, 非偏好回答 y_l
+# 优化目标: 增大 P(y_w|x) / P(y_l|x) 的比值
+
+from trl import DPOTrainer
+
+dpo_trainer = DPOTrainer(
+    model=model,
+    train_dataset=preference_dataset,  # (prompt, chosen, rejected)
+    tokenizer=tokenizer,
+    args=training_args,
+)
+dpo_trainer.train()
+```
+
+### 推理优化
+
+#### 量化：减小模型体积
+
+```python
+from transformers import BitsAndBytesConfig
+
+# 4-bit 量化加载
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+)
+
+model = AutoModelForCausalLM.from_pretrained(
+    "meta-llama/Llama-3.2-3B",
+    quantization_config=bnb_config,
+)
+```
+
+### 缩放法则
+
+Kaplan et al. (2020) 发现，模型性能与三个因素遵循幂律关系：
+
+$$
+L(N, D, C) \propto N^{-\alpha_N} + D^{-\alpha_D} + C^{-\alpha_C}
+$$
+
+其中 $N$ 是参数量，$D$ 是数据量，$C$ 是计算量。三者都增加，性能才会持续提升。
+
+### 相关页面
+
+- [Transformer 教程](/tutorials/transformer/) — 大模型的底层架构
+- [Prompt Engineering](/tutorials/prompt-engineering/) — 如何用好大模型
+- [RAG 与 Agent](/tutorials/rag-agent/) — 基于大模型的应用开发

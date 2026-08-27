@@ -1,24 +1,118 @@
 ---
 title: 深度学习入门
-description: 从神经网络基础到现代深度学习架构
+description: 从感知机到神经网络——理解深度学习的基本单元
 ---
 
-## 深度学习入门
+## 感知机：神经网络的起点
 
-本系列教程讲解深度学习的基础知识和核心架构。
+感知机是深度学习的基本单元，模拟单个神经元的行为：
 
-### 你将学到
+$$
+y = f\left(\sum_{i=1}^n w_i x_i + b\right)
+$$
 
-- 神经网络基础：感知机、激活函数、反向传播
-- 卷积神经网络（CNN）：图像处理的利器
-- 循环神经网络（RNN/LSTM）：处理序列数据
-- 训练技巧：正则化、Dropout、Batch Normalization
+其中 $f$ 是激活函数，$w_i$ 是权重，$b$ 是偏置。
 
-### 前置知识
+### 从零实现感知机
 
-- 机器学习基础
-- 微积分基础
+```python
+import numpy as np
 
-### 教程目录
+def sigmoid(x):
+    """Sigmoid 激活函数"""
+    return 1 / (1 + np.exp(-x))
 
-> 📝 内容正在编写中，敬请期待。
+class Perceptron:
+    def __init__(self, n_inputs):
+        self.w = np.random.randn(n_inputs) * 0.01
+        self.b = 0.0
+
+    def forward(self, x):
+        """前向传播"""
+        z = np.dot(x, self.w) + self.b
+        return sigmoid(z)
+
+# 示例：3 个输入 → 1 个输出
+p = Perceptron(3)
+x = np.array([1.0, 0.5, -0.3])
+output = p.forward(x)
+print(f"输出: {output:.4f}")
+```
+
+### 多层感知机 (MLP)
+
+多个感知机堆叠成层，形成深度网络：
+
+```python
+import torch
+import torch.nn as nn
+
+class MLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = nn.Sequential(
+            nn.Linear(784, 256),   # 输入层 → 隐藏层
+            nn.ReLU(),              # 激活函数
+            nn.Dropout(0.2),        # 正则化
+            nn.Linear(256, 128),   # 隐藏层 2
+            nn.ReLU(),
+            nn.Linear(128, 10),    # 输出层 (10 类)
+        )
+
+    def forward(self, x):
+        return self.model(x)
+
+model = MLP()
+print(f"参数量: {sum(p.numel() for p in model.parameters()):,}")
+```
+
+### 激活函数对比
+
+| 函数 | 公式 | 特点 |
+|------|------|------|
+| Sigmoid | $\sigma(x) = \frac{1}{1+e^{-x}}$ | 输出 (0,1)，易梯度消失 |
+| ReLU | $f(x) = \max(0, x)$ | 简单高效，主流选择 |
+| GELU | $f(x) = x \cdot \Phi(x)$ | Transformer 标配 |
+
+### 反向传播
+
+反向传播用链式法则计算梯度，逐层更新参数：
+
+$$
+\frac{\partial L}{\partial w} = \frac{\partial L}{\partial y} \cdot \frac{\partial y}{\partial z} \cdot \frac{\partial z}{\partial w}
+$$
+
+```python
+# PyTorch 自动求导
+x = torch.tensor([2.0], requires_grad=True)
+y = x ** 3 + 2 * x  # y = x³ + 2x
+y.backward()         # 自动计算 dy/dx
+print(f"dy/dx at x=2: {x.grad.item()}")  # 3*4 + 2 = 14
+```
+
+### 训练循环
+
+```python
+def train_one_epoch(model, dataloader, optimizer, loss_fn):
+    model.train()
+    total_loss = 0
+    for x_batch, y_batch in dataloader:
+        optimizer.zero_grad()          # 清零梯度
+        y_pred = model(x_batch)        # 前向传播
+        loss = loss_fn(y_pred, y_batch) # 计算损失
+        loss.backward()                # 反向传播
+        optimizer.step()               # 更新参数
+        total_loss += loss.item()
+    return total_loss / len(dataloader)
+```
+
+### 本系列后续
+
+- 卷积神经网络 (CNN)
+- 循环神经网络 (RNN/LSTM)
+- 训练技巧：正则化、学习率调度
+
+### 相关页面
+
+- [机器学习基础](/tutorials/ml-basics/) — 前置知识
+- [Transformer 教程](/tutorials/transformer/) — 深度学习在 NLP 的革命

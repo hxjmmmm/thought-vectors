@@ -1,0 +1,133 @@
+---
+title: 2. Self-Attention 详解
+description: 深入理解 Q、K、V 矩阵——Transformer 的核心机制
+---
+
+## Self-Attention：让每个词"看到"所有词
+
+Self-Attention 的核心思想：**一句话中，每个词的含义由它和其他所有词的关系决定**。
+
+> "The animal didn't cross the street because **it** was too tired."
+
+"it" 指的是 "animal" 还是 "street"？Self-Attention 通过计算注意力权重来回答这个问题。
+
+### Q、K、V 的直观理解
+
+把 Self-Attention 类比为**数据库查询**：
+
+- **Q（Query，查询）**：当前词想知道什么——"我该关注谁？"
+- **K（Key，键）**：其他词能提供什么信息——"我有什么特征？"
+- **V（Value，值）**：其他词的实际内容——"我实际代表什么？"
+
+### 计算步骤
+
+给定输入序列 $X \in \mathbb{R}^{n \times d}$（$n$ 个词，每个 $d$ 维）：
+
+**1. 线性投影**
+
+$$
+Q = XW^Q, \quad K = XW^K, \quad V = XW^V
+$$
+
+其中 $W^Q, W^K, W^V \in \mathbb{R}^{d \times d_k}$
+
+**2. 计算注意力分数**
+
+$$
+\text{Scores} = \frac{QK^T}{\sqrt{d_k}}
+$$
+
+**3. Softmax 归一化**
+
+$$
+\text{Attention Weights} = \text{softmax}(\text{Scores})
+$$
+
+**4. 加权求和**
+
+$$
+\text{Output} = \text{Attention Weights} \times V
+$$
+
+### 完整代码实现
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import math
+
+class SelfAttention(nn.Module):
+    def __init__(self, d_model=512, d_k=64):
+        super().__init__()
+        self.d_k = d_k
+        self.W_q = nn.Linear(d_model, d_k, bias=False)
+        self.W_k = nn.Linear(d_model, d_k, bias=False)
+        self.W_v = nn.Linear(d_model, d_k, bias=False)
+
+    def forward(self, x, mask=None):
+        """
+        x: (batch_size, seq_len, d_model)
+        """
+        Q = self.W_q(x)  # (B, L, d_k)
+        K = self.W_k(x)  # (B, L, d_k)
+        V = self.W_v(x)  # (B, L, d_k)
+
+        # 注意力分数
+        scores = torch.matmul(Q, K.transpose(-2, -1))  # (B, L, L)
+        scores = scores / math.sqrt(self.d_k)
+
+        # 可选 mask（Decoder 用）
+        if mask is not None:
+            scores = scores.masked_fill(mask == 0, -1e9)
+
+        # Softmax
+        attn_weights = F.softmax(scores, dim=-1)
+
+        # 加权求和
+        output = torch.matmul(attn_weights, V)  # (B, L, d_k)
+
+        return output, attn_weights
+
+
+# 测试
+batch_size, seq_len, d_model, d_k = 2, 6, 512, 64
+attn = SelfAttention(d_model, d_k)
+x = torch.randn(batch_size, seq_len, d_model)
+output, weights = attn(x)
+
+print(f"输入形状: {x.shape}")         # (2, 6, 512)
+print(f"输出形状: {output.shape}")    # (2, 6, 64)
+print(f"注意力权重: {weights.shape}") # (2, 6, 6)
+
+# 可视化第一句话的注意力
+print("\n注意力矩阵 (第一句话):")
+print(weights[0].round(decimals=3))
+```
+
+### 为什么除以 $\sqrt{d_k}$ ？
+
+假设 $Q$ 和 $K$ 的每个元素独立，均值为 0，方差为 1：
+
+$$
+\text{Var}(QK^T) = d_k
+$$
+
+Softmax 的输入方差越大 → 输出越接近 one-hot → 梯度接近 0。除以 $\sqrt{d_k}$ 将方差控制为 1，保持梯度稳定。
+
+### Self-Attention vs Cross-Attention
+
+| 类型 | Q 来源 | K, V 来源 | 用途 |
+|------|--------|-----------|------|
+| Self-Attention | 当前序列 | 当前序列 | Encoder、Decoder 自注意 |
+| Cross-Attention | Decoder | Encoder 输出 | Decoder 关注源语言 |
+
+### 下一步
+
+- [3. Multi-Head Attention](#) — 多个注意力头并行
+- [4. 位置编码](#) — 让模型知道词的位置
+
+### 相关页面
+
+- [1. Transformer 架构总览](/tutorials/transformer/01-overview/) — 上一章
+- [注意力机制](/notes/concepts/attention/) — 知识库概念卡片
