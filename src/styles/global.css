@@ -21,6 +21,16 @@
   --sl-content-width: 50rem;
 }
 
+/* 首页：内容区更宽，图形更大 */
+[data-page-title="思维向量"] .sl-container {
+  max-width: 56rem;
+}
+
+/* 缩小 splash hero 与下方内容的间距 */
+.sl-hero {
+  padding-bottom: 0.5rem !important;
+}
+
 /* 链接 hover 效果 */
 .sl-markdown-content a {
   transition: color 0.15s ease;
