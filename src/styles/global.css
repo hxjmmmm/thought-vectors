@@ -6,27 +6,104 @@
 
 /* ===== Starlight 主题定制 ===== */
 
-/* 暗色模式下的 KaTeX 适配 */
+:root {
+  --sl-content-width: 50rem;
+  --sl-sidebar-width: 16rem;
+}
+
+/* ---- 暗色模式 KaTeX ---- */
 :root[data-theme="dark"] .katex {
   color: #e5e7eb;
 }
 
-/* 代码块圆角 */
-.starlight-aside {
+/* ---- 基础过渡 ---- */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ---- 侧边栏 ---- */
+nav.sidebar {
+  transition: transform 0.25s ease;
+}
+
+/* ---- 内容区 ---- */
+.sl-markdown-content {
+  animation: fadeUp 0.4s ease-out;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- 链接 ---- */
+.sl-markdown-content a {
+  transition: color 0.15s ease;
+}
+
+/* ---- 表格 ---- */
+.sl-markdown-content table {
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.sl-markdown-content th {
+  background: var(--sl-color-gray-1);
+  font-weight: 600;
+}
+
+/* ---- 图片 ---- */
+.sl-markdown-content img {
+  margin: 1.5rem auto;
   border-radius: 0.5rem;
 }
 
-/* 让内容区更宽一点 */
-:root {
-  --sl-content-width: 50rem;
+/* ---- Callout 颜色 ---- */
+.starlight-aside {
+  border-radius: 0.5rem;
+  animation: fadeUp 0.35s ease-out;
+}
+.starlight-aside--tip {
+  --sl-color-asides-text-accent: #059669;
+  border-left-color: #059669;
+}
+.starlight-aside--caution {
+  --sl-color-asides-text-accent: #d97706;
+  border-left-color: #d97706;
 }
 
-/* 首页：内容区更宽，图形更大 */
+/* ---- 代码块 ---- */
+.sl-markdown-content pre {
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* ---- 顶部导航 ---- */
+header.header {
+  transition: background 0.2s;
+}
+
+/* ---- 主题切换按钮 ---- */
+starlight-theme-select select {
+  transition: border-color 0.2s;
+}
+
+/* ---- 搜索框 ---- */
+input[data-pagefind-filter] {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* ---- 卡片 hover ---- */
+.card, .starlight-aside {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* ===== 首页 ===== */
 [data-page-title="思维向量"] .sl-container {
   max-width: 52rem;
 }
 
-/* 缩小 splash hero 与下方内容的间距 */
+/* 缩小 splash hero 间距 */
 [data-has-hero] .hero {
   padding-bottom: 0 !important;
   padding-top: 1rem !important;
@@ -41,88 +118,47 @@
   margin-bottom: 0.25rem !important;
 }
 
-/* 链接 hover 效果 */
-.sl-markdown-content a {
-  transition: color 0.15s ease;
-}
-
-/* 表格样式 */
-.sl-markdown-content table {
-  font-size: 0.875rem;
-}
-
-.sl-markdown-content th {
-  background: var(--sl-color-gray-1);
-  font-weight: 600;
-}
-
-/* 图片居中 */
-.sl-markdown-content img {
-  margin: 1.5rem auto;
-  border-radius: 0.5rem;
-}
-
-/* 自定义 Callout 颜色 */
-.starlight-aside--tip {
-  --sl-color-asides-text-accent: #059669;
-  border-left-color: #059669;
-}
-
-.starlight-aside--caution {
-  --sl-color-asides-text-accent: #d97706;
-  border-left-color: #d97706;
-}
-
-/* 首页 Hero 样式 */
-.home-hero {
-  text-align: center;
-  padding: 4rem 1rem 2rem;
-}
-
-.home-hero h1 {
-  font-size: 3rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
+/* 首页功能卡片 */
 .home-features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  padding: 2rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  padding: 1.5rem 0 0;
 }
-
 .home-feature-card {
   padding: 1.5rem;
-  border: 1px solid var(--sl-color-gray-3);
+  border: 1px solid var(--sl-color-gray-4);
   border-radius: 0.75rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
 }
-
 .home-feature-card:hover {
   border-color: var(--sl-color-text-accent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
 }
-
 .home-feature-card h3 {
   margin-top: 0;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
-
 .home-feature-card p {
   color: var(--sl-color-gray-2);
   margin: 0;
+  font-size: 0.9rem;
 }
 
-/* 响应式调整 */
+/* ===== 页脚 ===== */
+.page-footer {
+  border-top: 1px solid var(--sl-color-gray-4);
+  padding-top: 1.5rem;
+  margin-top: 3rem;
+  font-size: 0.8rem;
+  color: var(--sl-color-gray-2);
+}
+
+/* ===== 响应式 ===== */
 @media (max-width: 768px) {
-  .home-hero {
-    padding: 2rem 1rem 1rem;
-  }
-  .home-hero h1 {
-    font-size: 2rem;
+  .home-features {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }

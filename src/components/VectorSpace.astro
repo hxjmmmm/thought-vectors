@@ -1,5 +1,5 @@
 ---
-// 知识星系 — 自然漂浮的知识星云
+// 知识星系 — 首页 3D 可视化
 ---
 
 <div id="knowledge-galaxy" class="knowledge-galaxy">
@@ -42,29 +42,17 @@
 </style>
 
 <script>
-  import * as THREE from 'three';
+  import { createGalaxy } from '../lib/galaxy.js';
 
   const container = document.getElementById('knowledge-galaxy');
   const tooltip = document.getElementById('galaxy-tooltip');
   const isDark = document.documentElement.dataset.theme === 'dark' ||
     (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-  camera.position.set(0, 0, 7);
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0);
-  container.appendChild(renderer.domElement);
-
   const colors = isDark
     ? ['#60a5fa', '#818cf8', '#a78bfa', '#c084fc', '#38bdf8']
     : ['#2563eb', '#4f46e5', '#7c3aed', '#9333ea', '#0284c7'];
 
-  // 知识节点 — 扩大分布范围
-  const R = 2.2;
   const nodes = [
     { id: 'Transformer',  x: 0.0, y: 0.0, z: 0.0, size: 0.22 },
     { id: 'Attention',    x: 1.4, y: 0.6, z: 0.8, size: 0.15 },
@@ -111,136 +99,16 @@
     [19,8],[19,9],
   ];
 
-  // 淡色环
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(R, 0.006, 8, 120),
-    new THREE.MeshBasicMaterial({ color: isDark ? 0x475569 : 0x94a3b8, transparent: true, opacity: 0.1 })
-  );
-  ring.rotation.x = Math.PI / 2;
-  scene.add(ring);
+  const galaxy = createGalaxy(container, { isDark, nodes, links, colors, radius: 2.2 });
 
-  // 发光节点
-  const nodeGroup = new THREE.Group();
-  const nodeMeshes = [];
-  const labelSprites = [];
-  const clickable = [];
-
-  for (const node of nodes) {
-    const color = colors[nodes.indexOf(node) % colors.length];
-    const geo = new THREE.SphereGeometry(node.size, 24, 24);
-    const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.7, roughness: 0.3, metalness: 0.2 });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(node.x, node.y, node.z);
-    mesh.userData = { node, color, baseX: node.x, baseY: node.y, baseZ: node.z };
-    nodeGroup.add(mesh);
-    nodeMeshes.push(mesh);
-    clickable.push(mesh);
-
-    // 光晕
-    const hc = document.createElement('canvas'); hc.width = 64; hc.height = 64;
-    const hctx = hc.getContext('2d');
-    const hg = hctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    hg.addColorStop(0, color + '88'); hg.addColorStop(0.4, color + '18'); hg.addColorStop(1, 'transparent');
-    hctx.fillStyle = hg; hctx.fillRect(0, 0, 64, 64);
-    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(hc), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.5 }));
-    halo.position.copy(mesh.position);
-    halo.scale.set(0.9, 0.9, 1);
-    nodeGroup.add(halo);
-
-    // 标签
-    const lc = document.createElement('canvas'); lc.width = 256; lc.height = 80;
-    const lctx = lc.getContext('2d');
-    lctx.font = 'bold 32px "Inter","PingFang SC","Microsoft YaHei",sans-serif';
-    const tm = lctx.measureText(node.id);
-    const tw = tm.width, th = 32, padX = 10, padY = 4;
-    const bw = tw + padX * 2, bh = th + padY * 2;
-    const bx = (256 - bw) / 2, by = (80 - bh) / 2;
-    lctx.fillStyle = isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)';
-    lctx.beginPath(); lctx.roundRect(bx, by, bw, bh, 12); lctx.fill();
-    lctx.strokeStyle = color; lctx.lineWidth = 1.5;
-    lctx.beginPath(); lctx.roundRect(bx, by, bw, bh, 12); lctx.stroke();
-    lctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
-    lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
-    lctx.fillText(node.id, 128, 40);
-    const labelTex = new THREE.CanvasTexture(lc);
-    labelTex.minFilter = THREE.LinearFilter; labelTex.magFilter = THREE.LinearFilter;
-    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex, depthTest: false, depthWrite: false, transparent: true }));
-    label.position.copy(mesh.position);
-    label.position.y += node.size + 0.35;
-    label.scale.set(1.0, 0.31, 1);
-    nodeGroup.add(label);
-    labelSprites.push({ sprite: label, mesh, offsetY: node.size + 0.35 });
-  }
-  scene.add(nodeGroup);
-
-  // 曲线连线
-  const linkGroup = new THREE.Group();
-  for (const [a, b] of links) {
-    const from = new THREE.Vector3(nodes[a].x, nodes[a].y, nodes[a].z);
-    const to = new THREE.Vector3(nodes[b].x, nodes[b].y, nodes[b].z);
-    const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
-    mid.add(new THREE.Vector3((Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6));
-    const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
-    const linkGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(20));
-    const link = new THREE.Line(linkGeo, new THREE.LineBasicMaterial({ color: colors[a % colors.length], transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false }));
-    linkGroup.add(link);
-  }
-  scene.add(linkGroup);
-
-  // 粒子
-  const pCount = 80;
-  const pGeo = new THREE.BufferGeometry();
-  const pPos = new Float32Array(pCount * 3);
-  for (let i = 0; i < pCount; i++) {
-    const theta = Math.random() * Math.PI * 2, phi = Math.acos(2 * Math.random() - 1);
-    const r = R - 0.2 + Math.random() * 0.4;
-    pPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    pPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    pPos[i * 3 + 2] = r * Math.cos(phi);
-  }
-  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-  const dc = document.createElement('canvas'); dc.width = 16; dc.height = 16;
-  const dctx = dc.getContext('2d');
-  const dg = dctx.createRadialGradient(8, 8, 0, 8, 8, 8);
-  dg.addColorStop(0, 'rgba(255,255,255,1)'); dg.addColorStop(0.3, 'rgba(255,255,255,0.4)'); dg.addColorStop(1, 'transparent');
-  dctx.fillStyle = dg; dctx.fillRect(0, 0, 16, 16);
-  const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.04, map: new THREE.CanvasTexture(dc), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.5 }));
-  scene.add(particles);
-
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-  const dl = new THREE.DirectionalLight(0xffffff, 0.6);
-  dl.position.set(2, 3, 4); scene.add(dl);
-
-  // --- 交互 ---
-  let mx = 0, my = 0, dragging = false, pmx = 0, pmy = 0;
-  const raycaster = new THREE.Raycaster();
-  raycaster.params.Points.threshold = 0.5;
-  const mouse = new THREE.Vector2();
-  let focusedNode = null;
-  let focusTarget = new THREE.Vector3();
-  let focusZoom = 7;
-
-  function getIntersections(e) {
-    const rect = container.getBoundingClientRect();
-    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    return raycaster.intersectObjects(clickable);
-  }
-
+  // 悬停 tooltip
   container.addEventListener('mousemove', (e) => {
+    const node = galaxy.getHoverInfo(e);
     const rect = container.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    if (dragging) { mx += (x - pmx) * 0.5; my += (y - pmy) * 0.5; }
-    pmx = x; pmy = y;
-
-    const hits = getIntersections(e);
-    if (hits.length > 0) {
-      const n = hits[0].object.userData.node;
+    if (node) {
       container.classList.add('pointer');
       tooltip.className = 'galaxy-tooltip visible';
-      tooltip.textContent = n.id;
+      tooltip.textContent = node.id;
       tooltip.style.left = (e.clientX - rect.left) + 'px';
       tooltip.style.top = (e.clientY - rect.top) + 'px';
     } else {
@@ -248,72 +116,10 @@
       tooltip.className = 'galaxy-tooltip';
     }
   });
-
-  container.addEventListener('mousedown', () => { dragging = true; });
-  container.addEventListener('mouseup', (e) => {
-    if (!dragging) return;
-    const dx = Math.abs(pmx - ((e.clientX - container.getBoundingClientRect().left) / container.clientWidth) * 2 - 1);
-    const dy = Math.abs(pmy - (-((e.clientY - container.getBoundingClientRect().top) / container.clientHeight) * 2 + 1));
-    if (dx < 0.01 && dy < 0.01) {
-      const hits = getIntersections(e);
-      if (hits.length > 0) {
-        const n = hits[0].object.userData.node;
-        focusedNode = n;
-        focusTarget.set(n.x, n.y, n.z);
-        focusZoom = 4;
-      } else if (focusedNode) {
-        focusedNode = null;
-        focusZoom = 7;
-      }
-    }
-    dragging = false;
+  container.addEventListener('mouseleave', () => {
+    container.classList.remove('pointer');
+    tooltip.className = 'galaxy-tooltip';
   });
-  container.addEventListener('mouseleave', () => { dragging = false; container.classList.remove('pointer'); tooltip.className = 'galaxy-tooltip'; });
 
-  // 动画
-  const clock = new THREE.Clock();
-  function animate() {
-    requestAnimationFrame(animate);
-    const dt = Math.min(clock.getDelta(), 0.1);
-    const t = performance.now() * 0.001;
-
-    // 旋转
-    if (!dragging) { mx += dt * 0.03; }
-    nodeGroup.rotation.y += (mx - nodeGroup.rotation.y) * 0.03;
-    nodeGroup.rotation.x += (my - nodeGroup.rotation.x) * 0.03;
-    linkGroup.rotation.copy(nodeGroup.rotation);
-    particles.rotation.copy(nodeGroup.rotation);
-    ring.rotation.z += dt * 0.04;
-
-    // 聚焦动画
-    focusZoom += (focusedNode ? 3.5 : 7 - focusZoom) * 0.04;
-    camera.position.z += (focusZoom - camera.position.z) * 0.04;
-
-    // 节点呼吸
-    for (const mesh of nodeMeshes) {
-      const { baseX, baseY, baseZ, node } = mesh.userData;
-      const breathe = 1 + Math.sin(t * 1.2 + baseX * 3) * 0.03;
-      if (focusedNode === node) {
-        mesh.scale.setScalar(1.5);
-        mesh.material.emissiveIntensity = 1.5;
-      } else {
-        mesh.scale.setScalar(breathe);
-        mesh.material.emissiveIntensity = 0.7;
-      }
-    }
-
-    for (const { sprite, mesh, offsetY } of labelSprites) {
-      sprite.position.copy(mesh.position);
-      sprite.position.y += offsetY * mesh.scale.y;
-    }
-
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  window.addEventListener('resize', () => {
-    camera.aspect = container.clientWidth / container.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(container.clientWidth, container.clientHeight);
-  });
+  window.addEventListener('resize', () => galaxy.resize());
 </script>
