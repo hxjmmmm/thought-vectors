@@ -1,5 +1,5 @@
 ---
-// 3D 向量空间球 — 思维向量首页可视化
+// 3D 知识空间球 — 思维向量首页可视化
 ---
 
 <div id="vector-space-container" class="vector-space-container">
@@ -9,18 +9,12 @@
 <style>
   .vector-space-container {
     width: 100%;
-    height: 460px;
+    height: 500px;
     position: relative;
     overflow: hidden;
-    border-radius: 1rem;
-    border: 1px solid var(--sl-color-gray-4);
-    background: var(--sl-color-gray-7);
+    margin: 2rem 0;
     cursor: grab;
-    transition: border-color 0.3s;
-  }
-  :root[data-theme="dark"] .vector-space-container {
-    background: var(--sl-color-gray-7);
-    border-color: var(--sl-color-gray-5);
+    background: transparent;
   }
   .vector-space-container:active {
     cursor: grabbing;
@@ -30,7 +24,8 @@
   }
   @media (max-width: 768px) {
     .vector-space-container {
-      height: 340px;
+      height: 380px;
+      margin: 1rem 0;
     }
   }
 </style>
@@ -41,345 +36,288 @@
   const container = document.getElementById('vector-space-container');
   const canvas = document.getElementById('vector-space-canvas');
 
-  // 根据主题获取颜色
   const isDark = document.documentElement.dataset.theme === 'dark' ||
     (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  const bgColor = isDark ? '#1a1a2e' : '#f0f0f5';
-  const gridColor = isDark ? 0x334155 : 0xcbd5e1;
-  const gridOpacity = isDark ? 0.15 : 0.25;
-
-  // 场景
   const scene = new THREE.Scene();
-
-  // 相机
   const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-  camera.position.set(0, 0.5, 6.5);
+  camera.position.set(0, 0.3, 7);
 
-  // 渲染器
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
 
-  // light/dark 配色
   const palette = isDark
-    ? { primary: '#3b82f6', secondary: '#8b5cf6', accent: '#ec4899', light: '#60a5fa', dim: '#475569' }
-    : { primary: '#2563eb', secondary: '#7c3aed', accent: '#db2777', light: '#3b82f6', dim: '#94a3b8' };
+    ? ['#3b82f6', '#8b5cf6', '#ec4899', '#60a5fa', '#a78bfa', '#f472b6', '#38bdf8', '#818cf8']
+    : ['#2563eb', '#7c3aed', '#db2777', '#3b82f6', '#8b5cf6', '#e11d48', '#0284c7', '#6d28d9'];
 
-  // --- 球体线框 ---
-  const sphereGeo = new THREE.SphereGeometry(1.85, 64, 40);
+  // --- 知识点数据 ---
+  const knowledgeNodes = [
+    { name: 'Transformer',  pos: [ 0.00,  0.00,  0.00], color: palette[0], size: 0.12 },
+    { name: 'Attention',    pos: [ 0.65,  0.35,  0.40], color: palette[1], size: 0.10 },
+    { name: 'Embedding',    pos: [-0.60, -0.30,  0.35], color: palette[2], size: 0.09 },
+    { name: 'GPT',          pos: [ 0.50, -0.50, -0.30], color: palette[3], size: 0.10 },
+    { name: 'BERT',         pos: [-0.55,  0.45, -0.35], color: palette[4], size: 0.09 },
+    { name: 'RLHF',         pos: [ 0.75, -0.15, -0.55], color: palette[5], size: 0.08 },
+    { name: 'RAG',          pos: [-0.30, -0.60, -0.45], color: palette[6], size: 0.09 },
+    { name: 'LoRA',         pos: [-0.70,  0.10,  0.55], color: palette[7], size: 0.08 },
+    { name: 'CNN',          pos: [ 0.35,  0.65, -0.20], color: palette[0], size: 0.08 },
+    { name: 'RNN',          pos: [-0.20,  0.70,  0.30], color: palette[1], size: 0.08 },
+    { name: 'Diffusion',    pos: [ 0.25, -0.70,  0.30], color: palette[2], size: 0.08 },
+    { name: 'Agent',        pos: [-0.65, -0.50, -0.20], color: palette[3], size: 0.08 },
+    { name: 'Tokenization', pos: [ 0.10,  0.15,  0.85], color: palette[4], size: 0.08 },
+    { name: 'MoE',          pos: [-0.40, -0.10, -0.80], color: palette[5], size: 0.07 },
+    { name: 'RL',           pos: [ 0.80,  0.45,  0.15], color: palette[6], size: 0.07 },
+    { name: 'GAN',          pos: [-0.80, -0.35,  0.10], color: palette[7], size: 0.07 },
+    { name: 'KV Cache',     pos: [ 0.55,  0.20, -0.70], color: palette[0], size: 0.07 },
+    { name: 'SFT',          pos: [-0.50,  0.60,  0.50], color: palette[1], size: 0.07 },
+    { name: 'Prompt',       pos: [ 0.70, -0.55,  0.20], color: palette[2], size: 0.08 },
+    { name: 'DPO',          pos: [ 0.00, -0.30, -0.85], color: palette[3], size: 0.07 },
+  ];
+
+  // 知识点连线（相关概念）
+  const links = [
+    [0, 1], [0, 2], [0, 3], [0, 4], [0, 5],  // Transformer → 核心概念
+    [1, 2], [1, 16],                            // Attention → Embedding, KV Cache
+    [3, 5], [3, 17], [3, 19],                   // GPT → RLHF, SFT, DPO
+    [4, 2], [4, 12],                             // BERT → Embedding, Tokenization
+    [6, 0], [6, 18],                             // RAG → Transformer, Prompt
+    [7, 0], [7, 3],                              // LoRA → Transformer, GPT
+    [8, 9], [8, 0],                              // CNN → RNN, Transformer
+    [11, 6], [11, 18],                           // Agent → RAG, Prompt
+    [12, 2], [12, 4],                            // Tokenization → Embedding, BERT
+    [13, 0], [13, 3],                            // MoE → Transformer, GPT
+    [14, 8], [14, 9],                            // RL → CNN, RNN
+    [15, 0], [15, 8],                            // GAN → Transformer, CNN
+    [16, 1], [16, 3],                            // KV Cache → Attention, GPT
+    [17, 5], [17, 19],                           // SFT → RLHF, DPO
+    [18, 3], [18, 0],                            // Prompt → GPT, Transformer
+    [19, 5], [19, 17],                           // DPO → RLHF, SFT
+  ];
+
+  // --- 网格球体 ---
+  const gridColor = isDark ? 0x475569 : 0x94a3b8;
+  const sphereGeo = new THREE.SphereGeometry(1.9, 72, 48);
   const sphereWire = new THREE.LineSegments(
     new THREE.WireframeGeometry(sphereGeo),
-    new THREE.LineBasicMaterial({ color: gridColor, transparent: true, opacity: gridOpacity })
+    new THREE.LineBasicMaterial({ color: gridColor, transparent: true, opacity: 0.08 })
   );
   scene.add(sphereWire);
 
-  // --- 球体表面网格线（经纬线风格） ---
-  const ringGroup = new THREE.Group();
-  function addLatRing(y, opacity) {
-    const r = Math.sqrt(1.85 * 1.85 - y * y);
-    const ringGeo = new THREE.TorusGeometry(r, 0.004, 8, 80);
+  // --- 经线环 ---
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI;
+    const ringGeo = new THREE.TorusGeometry(1.9, 0.003, 8, 100);
     const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
-      color: gridColor, transparent: true, opacity, depthTest: true,
-    }));
-    ring.position.y = y;
-    ringGroup.add(ring);
-  }
-  for (let i = -3; i <= 3; i++) {
-    addLatRing(i * 0.5, 0.08);
-  }
-  // 经线
-  for (let i = 0; i < 12; i++) {
-    const angle = (i / 12) * Math.PI * 2;
-    const ringGeo = new THREE.TorusGeometry(1.85, 0.004, 8, 80);
-    const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
-      color: gridColor, transparent: true, opacity: 0.08, depthTest: true,
+      color: gridColor, transparent: true, opacity: 0.06,
     }));
     ring.rotation.x = Math.PI / 2;
     ring.rotation.y = angle;
-    ringGroup.add(ring);
+    scene.add(ring);
   }
-  scene.add(ringGroup);
 
-  // --- 雾状光晕 ---
-  const glowGeo = new THREE.SphereGeometry(1.88, 64, 32);
+  // --- 光晕 ---
   const glowMat = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(palette.primary) } },
-    vertexShader: /* glsl */ `
-      varying vec3 vNormal; varying vec3 vPosition;
-      void main() {
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        vNormal = normalize(normalMatrix * normal);
-        vPosition = position;
-      }
-    `,
-    fragmentShader: /* glsl */ `
-      varying vec3 vNormal; varying vec3 vPosition;
+    uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(palette[0]) } },
+    vertexShader: `varying vec3 vNormal; varying vec3 vPos;
+      void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      vNormal = normalize(normalMatrix * normal); vPos = position; }`,
+    fragmentShader: `varying vec3 vNormal; varying vec3 vPos;
       uniform float uTime; uniform vec3 uColor;
       void main() {
-        float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0);
-        float alpha = intensity * 0.18 + 0.02 * sin(uTime * 0.3 + vPosition.y * 4.0);
-        gl_FragColor = vec4(uColor, alpha);
-      }
-    `,
+        float i = pow(0.55 - dot(vNormal, vec3(0,0,1)), 3.5);
+        gl_FragColor = vec4(uColor, i * 0.12 + 0.015 * sin(uTime * 0.4 + vPos.y * 3.0));
+      }`,
     transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
   });
-  scene.add(new THREE.Mesh(glowGeo, glowMat));
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.92, 64, 32), glowMat));
 
-  // --- 粒子（思维点） ---
-  const PARTICLE_COUNT = 160;
-  const particlesGeo = new THREE.BufferGeometry();
-  const positions = new Float32Array(PARTICLE_COUNT * 3);
-  const colors = new Float32Array(PARTICLE_COUNT * 3);
-  const velocities = new Float32Array(PARTICLE_COUNT * 3);
-  const sizes = new Float32Array(PARTICLE_COUNT);
+  // --- 生成文字标签纹理 ---
+  function createLabelTexture(text, colorHex) {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 128;
+    const ctx = c.getContext('2d');
+    // 背景圆角标签
+    const metrics = ctx.measureText(text);
+    ctx.font = 'bold 36px "Inter", "PingFang SC", "Microsoft YaHei", sans-serif';
+    const tm = ctx.measureText(text);
+    const tw = tm.width;
+    const th = 36;
+    const padX = 16, padY = 10;
+    const bw = tw + padX * 2, bh = th + padY * 2;
+    const bx = (256 - bw) / 2, by = (128 - bh) / 2;
 
-  const paletteColors = [
-    new THREE.Color(palette.primary),
-    new THREE.Color(palette.secondary),
-    new THREE.Color(palette.accent),
-    new THREE.Color(palette.light),
-  ];
+    // 半透明背景
+    ctx.fillStyle = isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 20);
+    ctx.fill();
+
+    // 边框
+    ctx.strokeStyle = colorHex;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 20);
+    ctx.stroke();
+
+    // 文字
+    ctx.fillStyle = colorHex;
+    ctx.font = 'bold 36px "Inter", "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 64);
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+  }
+
+  // --- 创建知识点节点 ---
+  const nodeGroup = new THREE.Group();
+  const labelSprites = [];
+  const nodeMeshes = [];
+
+  for (const node of knowledgeNodes) {
+    // 核心球体
+    const geo = new THREE.SphereGeometry(node.size, 24, 24);
+    const mat = new THREE.MeshStandardMaterial({
+      color: node.color,
+      emissive: node.color,
+      emissiveIntensity: 0.9,
+      roughness: 0.25,
+      metalness: 0.3,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(...node.pos);
+    mesh.userData = { basePos: [...node.pos], phase: Math.random() * Math.PI * 2, color: node.color };
+    nodeGroup.add(mesh);
+    nodeMeshes.push(mesh);
+
+    // 光晕 sprite
+    const haloCanvas = document.createElement('canvas');
+    haloCanvas.width = 64; haloCanvas.height = 64;
+    const hctx = haloCanvas.getContext('2d');
+    const hg = hctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    hg.addColorStop(0, node.color + '80');
+    hg.addColorStop(0.4, node.color + '20');
+    hg.addColorStop(1, 'transparent');
+    hctx.fillStyle = hg;
+    hctx.fillRect(0, 0, 64, 64);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(haloCanvas),
+      blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.6,
+    }));
+    halo.position.copy(mesh.position);
+    halo.scale.set(0.6, 0.6, 1);
+    nodeGroup.add(halo);
+
+    // 文字标签
+    const labelTex = createLabelTexture(node.name, node.color);
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: labelTex, depthTest: false, depthWrite: false, transparent: true,
+    }));
+    label.position.copy(mesh.position);
+    label.position.y += node.size + 0.22;
+    label.scale.set(0.9, 0.45, 1);
+    nodeGroup.add(label);
+    labelSprites.push({ sprite: label, node: mesh, offsetY: node.size + 0.22 });
+  }
+  scene.add(nodeGroup);
+
+  // --- 知识点连线 ---
+  const linkGroup = new THREE.Group();
+  for (const [a, b] of links) {
+    const from = new THREE.Vector3(...knowledgeNodes[a].pos);
+    const to = new THREE.Vector3(...knowledgeNodes[b].pos);
+    const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
+    const dist = from.distanceTo(to);
+
+    const curve = new THREE.QuadraticBezierCurve3(
+      from, mid.clone().add(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3
+      )), to
+    );
+    const points = curve.getPoints(24);
+    const linkGeo = new THREE.BufferGeometry().setFromPoints(points);
+    const link = new THREE.Line(linkGeo, new THREE.LineBasicMaterial({
+      color: knowledgeNodes[a].color,
+      transparent: true,
+      opacity: 0.15,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }));
+    linkGroup.add(link);
+  }
+  scene.add(linkGroup);
+
+  // --- 粒子 ---
+  const PARTICLE_COUNT = 120;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(PARTICLE_COUNT * 3);
+  const pCol = new Float32Array(PARTICLE_COUNT * 3);
+  const pVel = new Float32Array(PARTICLE_COUNT * 3);
 
   for (let i = 0; i < PARTICLE_COUNT; i++) {
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
-    const r = 1.7 * Math.cbrt(Math.random());
-    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = r * Math.cos(phi);
-
-    const c = paletteColors[Math.floor(Math.random() * paletteColors.length)];
-    colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
-
-    velocities[i * 3] = (Math.random() - 0.5) * 0.004;
-    velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.004;
-    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.004;
-
-    sizes[i] = Math.random() * 2.5 + 1.0;
+    const r = 1.8 * Math.cbrt(Math.random());
+    pPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    pPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    pPos[i * 3 + 2] = r * Math.cos(phi);
+    const c = new THREE.Color(palette[Math.floor(Math.random() * palette.length)]);
+    pCol[i * 3] = c.r; pCol[i * 3 + 1] = c.g; pCol[i * 3 + 2] = c.b;
+    pVel[i * 3] = (Math.random() - 0.5) * 0.003;
+    pVel[i * 3 + 1] = (Math.random() - 0.5) * 0.003;
+    pVel[i * 3 + 2] = (Math.random() - 0.5) * 0.003;
   }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
 
-  particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  particlesGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  particlesGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  const dotCanvas = document.createElement('canvas');
+  dotCanvas.width = 16; dotCanvas.height = 16;
+  const dctx = dotCanvas.getContext('2d');
+  const dg = dctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+  dg.addColorStop(0, 'rgba(255,255,255,1)');
+  dg.addColorStop(0.3, 'rgba(255,255,255,0.5)');
+  dg.addColorStop(1, 'rgba(255,255,255,0)');
+  dctx.fillStyle = dg;
+  dctx.fillRect(0, 0, 16, 16);
 
-  const particleTexCanvas = document.createElement('canvas');
-  particleTexCanvas.width = 32; particleTexCanvas.height = 32;
-  const pctx = particleTexCanvas.getContext('2d');
-  const gradient = pctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-  gradient.addColorStop(0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.1, 'rgba(255,255,255,0.9)');
-  gradient.addColorStop(0.3, 'rgba(255,255,255,0.4)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
-  pctx.fillStyle = gradient;
-  pctx.fillRect(0, 0, 32, 32);
-
-  const particles = new THREE.Points(particlesGeo, new THREE.PointsMaterial({
-    size: 0.06,
-    map: new THREE.CanvasTexture(particleTexCanvas),
-    vertexColors: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    transparent: true,
-    opacity: 0.9,
-    sizeAttenuation: true,
+  const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({
+    size: 0.04, map: new THREE.CanvasTexture(dotCanvas),
+    vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.7,
   }));
   scene.add(particles);
 
-  // --- 向量箭头（核心视觉） ---
-  const arrowGroup = new THREE.Group();
-  const arrows = [];
-
-  function createArrow(from, to, colorHex) {
-    const dir = new THREE.Vector3().subVectors(to, from);
-    const length = dir.length();
-    const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
-    dir.normalize();
-
-    const arrow = new THREE.Group();
-
-    // 箭杆
-    const shaftGeo = new THREE.CylinderGeometry(0.015, 0.015, length, 8);
-    const shaftMat = new THREE.MeshStandardMaterial({
-      color: colorHex,
-      emissive: colorHex,
-      emissiveIntensity: 0.6,
-      roughness: 0.3,
-      metalness: 0.1,
-    });
-    const shaft = new THREE.Mesh(shaftGeo, shaftMat);
-    shaft.position.y = length / 2;
-    arrow.add(shaft);
-
-    // 箭头
-    const headGeo = new THREE.ConeGeometry(0.045, 0.15, 8);
-    const headMat = new THREE.MeshStandardMaterial({
-      color: colorHex,
-      emissive: colorHex,
-      emissiveIntensity: 0.8,
-      roughness: 0.2,
-      metalness: 0.2,
-    });
-    const head = new THREE.Mesh(headGeo, headMat);
-    head.position.y = length;
-    arrow.add(head);
-
-    // 起点小球
-    const dotGeo = new THREE.SphereGeometry(0.04, 8, 8);
-    const dot = new THREE.Mesh(dotGeo, new THREE.MeshStandardMaterial({
-      color: colorHex,
-      emissive: colorHex,
-      emissiveIntensity: 1,
-      roughness: 0.2,
-    }));
-    arrow.add(dot);
-
-    // 放置方向
-    const quat = new THREE.Quaternion();
-    quat.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-    arrow.setRotationFromQuaternion(quat);
-    arrow.position.copy(from);
-
-    return arrow;
-  }
-
-  // 生成有意义的向量：从球心附近射向不同方向
-  const arrowDefs = [
-    { from: [-0.2, 0.1, 0.2], to: [0.8, 0.6, 0.4], color: palette.primary },
-    { from: [0.1, -0.1, -0.1], to: [-0.7, 0.5, -0.3], color: palette.secondary },
-    { from: [-0.1, 0.2, -0.1], to: [0.3, -0.8, 0.5], color: palette.accent },
-    { from: [0.2, -0.1, 0.1], to: [-0.5, -0.6, 0.7], color: palette.light },
-    { from: [-0.3, 0.0, -0.2], to: [0.9, 0.2, -0.6], color: palette.primary },
-    { from: [0.0, 0.1, 0.3], to: [-0.8, -0.3, -0.4], color: palette.secondary },
-    { from: [0.1, -0.2, -0.1], to: [0.5, 0.7, 0.3], color: palette.accent },
-    { from: [-0.1, 0.0, 0.0], to: [-0.4, -0.7, -0.5], color: palette.light },
-    { from: [0.1, 0.1, -0.2], to: [0.6, -0.5, -0.6], color: palette.primary },
-    { from: [-0.2, -0.1, 0.1], to: [-0.6, 0.7, 0.2], color: palette.secondary },
-  ];
-
-  for (const def of arrowDefs) {
-    const from = new THREE.Vector3(...def.from);
-    const to = new THREE.Vector3(...def.to);
-    const arrow = createArrow(from, to, def.color);
-    arrowGroup.add(arrow);
-    arrows.push({ arrow, from: from.clone(), to: to.clone(), color: def.color });
-  }
-  scene.add(arrowGroup);
-
-  // --- 发光节点（思维核心） ---
-  const nodeGroup = new THREE.Group();
-  const nodeDefs = [
-    [0, 0, 0], [0.5, 0.3, 0.4], [-0.4, -0.5, 0.3], [0.3, -0.6, -0.2],
-    [-0.6, 0.4, -0.4], [0.7, -0.3, 0.5], [-0.3, 0.6, -0.5], [0.4, 0.5, -0.6],
-  ];
-
-  const nodeMeshes = [];
-  for (const [x, y, z] of nodeDefs) {
-    const nodeGeo = new THREE.SphereGeometry(0.06, 16, 16);
-    const nodeColor = paletteColors[Math.floor(Math.random() * paletteColors.length)];
-    const node = new THREE.Mesh(nodeGeo, new THREE.MeshStandardMaterial({
-      color: nodeColor,
-      emissive: nodeColor,
-      emissiveIntensity: 1.5,
-      roughness: 0.2,
-      metalness: 0.3,
-    }));
-    node.position.set(x, y, z);
-    node.userData = { color: nodeColor, baseX: x, baseY: y, baseZ: z, phase: Math.random() * Math.PI * 2 };
-    nodeGroup.add(node);
-    nodeMeshes.push(node);
-  }
-  scene.add(nodeGroup);
-
-  // --- 节点光晕（sprite） ---
-  const haloGroup = new THREE.Group();
-  const haloCanvas = document.createElement('canvas');
-  haloCanvas.width = 64; haloCanvas.height = 64;
-  const hctx = haloCanvas.getContext('2d');
-  const hgradient = hctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  hgradient.addColorStop(0, 'rgba(255,255,255,0.5)');
-  hgradient.addColorStop(0.3, 'rgba(255,255,255,0.2)');
-  hgradient.addColorStop(1, 'rgba(255,255,255,0)');
-  hctx.fillStyle = hgradient;
-  hctx.fillRect(0, 0, 64, 64);
-  const haloTexture = new THREE.CanvasTexture(haloCanvas);
-
-  for (const [x, y, z] of nodeDefs) {
-    const spriteMat = new THREE.SpriteMaterial({
-      map: haloTexture,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      transparent: true,
-      opacity: 0.5,
-    });
-    const sprite = new THREE.Sprite(spriteMat);
-    sprite.position.set(x, y, z);
-    sprite.scale.set(0.4, 0.4, 1);
-    haloGroup.add(sprite);
-  }
-  scene.add(haloGroup);
-
-  // --- 连线（节点之间） ---
-  const linkGroup = new THREE.Group();
-  for (let i = 0; i < nodeDefs.length; i++) {
-    for (let j = i + 1; j < nodeDefs.length; j++) {
-      const dist = Math.sqrt(
-        (nodeDefs[i][0] - nodeDefs[j][0]) ** 2 +
-        (nodeDefs[i][1] - nodeDefs[j][1]) ** 2 +
-        (nodeDefs[i][2] - nodeDefs[j][2]) ** 2
-      );
-      if (dist < 1.3) {
-        const linkGeo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(...nodeDefs[i]),
-          new THREE.Vector3(...nodeDefs[j]),
-        ]);
-        const link = new THREE.Line(linkGeo, new THREE.LineBasicMaterial({
-          color: paletteColors[Math.floor(Math.random() * paletteColors.length)],
-          transparent: true,
-          opacity: 0.12 + (1.3 - dist) * 0.2,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-        }));
-        linkGroup.add(link);
-      }
-    }
-  }
-  scene.add(linkGroup);
-
   // --- 光照 ---
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(2, 3, 4);
-  scene.add(dirLight);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.7);
+  dl.position.set(2, 3, 4);
+  scene.add(dl);
 
-  // --- 鼠标交互 ---
-  let mouseX = 0, mouseY = 0;
-  let targetRotX = 0.3, targetRotY = 0.4;
-  let isDragging = false, prevMX = 0, prevMY = 0;
+  // --- 交互 ---
+  let mx = 0, my = 0, trx = 0.25, try_ = 0.35;
+  let dragging = false, pmx = 0, pmy = 0;
 
   container.addEventListener('mousemove', (e) => {
     const rect = container.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    if (isDragging) {
-      targetRotY += (x - prevMX) * 2.5;
-      targetRotX += (y - prevMY) * 2.5;
-    }
-    prevMX = x; prevMY = y;
-    mouseX = x; mouseY = y;
+    if (dragging) { try_ += (x - pmx) * 2.5; trx += (y - pmy) * 2.5; }
+    pmx = x; pmy = y; mx = x; my = y;
   });
-  container.addEventListener('mousedown', () => { isDragging = true; });
-  container.addEventListener('mouseup', () => { isDragging = false; });
-  container.addEventListener('mouseleave', () => { isDragging = false; });
+  container.addEventListener('mousedown', () => { dragging = true; });
+  container.addEventListener('mouseup', () => { dragging = false; });
+  container.addEventListener('mouseleave', () => { dragging = false; });
   container.addEventListener('touchmove', (e) => {
     if (e.touches.length === 1) {
       const rect = container.getBoundingClientRect();
       const x = ((e.touches[0].clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((e.touches[0].clientY - rect.top) / rect.height) * 2 + 1;
-      targetRotY += (x - prevMX) * 2.5;
-      targetRotX += (y - prevMY) * 2.5;
-      prevMX = x; prevMY = y;
+      try_ += (x - pmx) * 2.5; trx += (y - pmy) * 2.5;
+      pmx = x; pmy = y;
     }
   });
 
@@ -390,68 +328,50 @@
     const dt = Math.min(clock.getDelta(), 0.1);
     const t = performance.now() * 0.001;
 
-    if (!isDragging) {
-      targetRotY += dt * 0.12;
-    }
-    targetRotY += (mouseX * 0.4 - targetRotY) * 0.015;
-    targetRotX += (mouseY * 0.25 - targetRotX) * 0.015;
-    scene.rotation.y += (targetRotY - scene.rotation.y) * 0.04;
-    scene.rotation.x += (targetRotX - scene.rotation.x) * 0.04;
+    if (!dragging) try_ += dt * 0.08;
+    try_ += (mx * 0.35 - try_) * 0.012;
+    trx += (my * 0.2 - trx) * 0.012;
+    scene.rotation.y += (try_ - scene.rotation.y) * 0.04;
+    scene.rotation.x += (trx - scene.rotation.x) * 0.04;
 
     glowMat.uniforms.uTime.value = t;
 
     // 粒子运动
-    const posArr = particlesGeo.attributes.position.array;
+    const posArr = pGeo.attributes.position.array;
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const idx = i * 3;
-      posArr[idx] += velocities[idx];
-      posArr[idx + 1] += velocities[idx + 1];
-      posArr[idx + 2] += velocities[idx + 2];
-      const dist = Math.sqrt(posArr[idx] ** 2 + posArr[idx + 1] ** 2 + posArr[idx + 2] ** 2);
-      if (dist > 1.7) {
-        const nx = posArr[idx] / dist, ny = posArr[idx + 1] / dist, nz = posArr[idx + 2] / dist;
-        const dot = velocities[idx] * nx + velocities[idx + 1] * ny + velocities[idx + 2] * nz;
-        velocities[idx] -= 2 * dot * nx;
-        velocities[idx + 1] -= 2 * dot * ny;
-        velocities[idx + 2] -= 2 * dot * nz;
-        velocities[idx] += (Math.random() - 0.5) * 0.0008;
-        velocities[idx + 1] += (Math.random() - 0.5) * 0.0008;
-        velocities[idx + 2] += (Math.random() - 0.5) * 0.0008;
-        posArr[idx] = nx * 1.68; posArr[idx + 1] = ny * 1.68; posArr[idx + 2] = nz * 1.68;
+      posArr[idx] += pVel[idx]; posArr[idx + 1] += pVel[idx + 1]; posArr[idx + 2] += pVel[idx + 2];
+      const d = Math.sqrt(posArr[idx] ** 2 + posArr[idx + 1] ** 2 + posArr[idx + 2] ** 2);
+      if (d > 1.8) {
+        const nx = posArr[idx] / d, ny = posArr[idx + 1] / d, nz = posArr[idx + 2] / d;
+        const dot = pVel[idx] * nx + pVel[idx + 1] * ny + pVel[idx + 2] * nz;
+        pVel[idx] -= 2 * dot * nx; pVel[idx + 1] -= 2 * dot * ny; pVel[idx + 2] -= 2 * dot * nz;
+        posArr[idx] = nx * 1.78; posArr[idx + 1] = ny * 1.78; posArr[idx + 2] = nz * 1.78;
       }
     }
-    particlesGeo.attributes.position.needsUpdate = true;
+    pGeo.attributes.position.needsUpdate = true;
 
     // 节点微动
-    for (const node of nodeMeshes) {
-      const { baseX, baseY, baseZ, phase } = node.userData;
-      node.position.x = baseX + Math.sin(t * 0.8 + phase) * 0.04;
-      node.position.y = baseY + Math.cos(t * 0.6 + phase) * 0.04;
-      node.position.z = baseZ + Math.sin(t * 0.7 + phase + 1) * 0.04;
+    for (const mesh of nodeMeshes) {
+      const { basePos, phase } = mesh.userData;
+      mesh.position.x = basePos[0] + Math.sin(t * 0.7 + phase) * 0.03;
+      mesh.position.y = basePos[1] + Math.cos(t * 0.6 + phase) * 0.03;
+      mesh.position.z = basePos[2] + Math.sin(t * 0.5 + phase + 1) * 0.03;
+    }
+
+    // 标签跟随节点
+    for (const { sprite, node, offsetY } of labelSprites) {
+      sprite.position.copy(node.position);
+      sprite.position.y += offsetY;
     }
 
     renderer.render(scene, camera);
   }
   animate();
 
-  // 响应式
   window.addEventListener('resize', () => {
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
-  });
-
-  // 主题切换监听
-  const observer = new MutationObserver(() => {
-    // 主题变化时刷新页面以应用新颜色
-    const newIsDark = document.documentElement.dataset.theme === 'dark' ||
-      (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (newIsDark !== isDark) {
-      window.location.reload();
-    }
-  });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    window.location.reload();
   });
 </script>
