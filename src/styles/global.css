@@ -28,7 +28,8 @@
 
 /* 缩小 splash hero 与下方内容的间距 */
 .sl-hero {
-  padding-bottom: 0.5rem !important;
+  padding-bottom: 0 !important;
+  padding-top: 1rem !important;
 }
 
 /* 链接 hover 效果 */
