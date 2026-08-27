@@ -1,42 +1,105 @@
 ---
 title: 论文笔记
-description: 经典 AI 论文解读与笔记
+description: 经典 AI 论文解读与核心思想
 ---
 
-## 论文笔记
+## "Attention Is All You Need" (2017)
 
-经典 AI 论文的解读和学习笔记，帮你理解 AI 领域的核心思想。
+**作者**：Vaswani et al. (Google Brain)  
+**引用**：超过 100,000 次  
+**意义**：提出 Transformer 架构，完全取代了 RNN 在序列建模中的地位。
 
-### 基础架构
+### 核心贡献
 
-| 论文 | 年份 | 核心贡献 |
-|------|------|----------|
-| [Attention Is All You Need](https://arxiv.org/abs/1706.03762) | 2017 | Transformer 架构 |
-| [BERT](https://arxiv.org/abs/1810.04805) | 2018 | 双向预训练 |
-| [GPT](https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf) | 2018 | 生成式预训练 |
+1. **完全基于 Attention 的架构**：不使用任何循环或卷积
+2. **Multi-Head Attention**：多个注意力头并行捕捉不同粒度的关系
+3. **位置编码**：用正弦函数编码位置信息
+4. **训练效率**：可并行计算，训练速度远超 RNN
 
-### 大模型
+### 关键公式
 
-| 论文 | 年份 | 核心贡献 |
-|------|------|----------|
-| [Scaling Laws](https://arxiv.org/abs/2001.08361) | 2020 | 模型规模与性能关系 |
-| [Chinchilla](https://arxiv.org/abs/2203.15556) | 2022 | 最优训练数据量 |
-| [LLaMA](https://arxiv.org/abs/2302.13971) | 2023 | 开源大模型 |
+缩放点积注意力：
 
-### 对齐与安全
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+$$
 
-| 论文 | 年份 | 核心贡献 |
-|------|------|----------|
-| [InstructGPT](https://arxiv.org/abs/2203.02155) | 2022 | RLHF 对齐 |
-| [DPO](https://arxiv.org/abs/2305.18290) | 2023 | 直接偏好优化 |
-| [Constitutional AI](https://arxiv.org/abs/2212.08073) | 2022 | 宪法 AI |
+Multi-Head Attention：
 
-### 前沿技术
+$$
+\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, ..., \text{head}_h)W^O
+$$
 
-| 论文 | 年份 | 核心贡献 |
-|------|------|----------|
-| [RAG](https://arxiv.org/abs/2005.11401) | 2020 | 检索增强生成 |
-| [Flash Attention](https://arxiv.org/abs/2205.14135) | 2022 | 高效注意力计算 |
-| [MoE](https://arxiv.org/abs/1701.06538) | 2017 | 混合专家模型 |
+其中 $\text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$
 
-> 📝 每篇论文的详细解读正在编写中，敬请期待。
+### 架构要点
+
+- Encoder：6 层，每层有 Self-Attention + FFN
+- Decoder：6 层，每层有 Masked Self-Attention + Cross-Attention + FFN
+- $d_{\text{model}} = 512$，$h = 8$ 个头，$d_k = d_v = 64$
+- 在 WMT 2014 英德翻译任务上达到 28.4 BLEU（当时最佳）
+
+---
+
+## "BERT: Pre-training of Deep Bidirectional Transformers" (2018)
+
+**作者**：Devlin et al. (Google AI)  
+**意义**：提出双向预训练范式，在 11 项 NLP 任务上刷新纪录。
+
+### 核心贡献
+
+1. **Masked Language Model (MLM)**：随机 mask 15% 的 token，训练模型预测被 mask 的词
+2. **Next Sentence Prediction (NSP)**：判断两句话是否连续
+3. **双向上下文**：与 GPT 的单向不同，BERT 能同时看到前后文
+
+### 预训练细节
+
+- 数据：BooksCorpus (800M 词) + English Wikipedia (2.5B 词)
+- 两个版本：BERT-base (110M 参数) / BERT-large (340M 参数)
+- 输入格式：`[CLS] 句子A [SEP] 句子B [SEP]`
+
+### 微调范式
+
+BERT 通过添加一个简单的分类头即可适配各种下游任务：
+- 单句分类：取 `[CLS]` 的输出
+- 句子对分类：同上
+- 序列标注：取每个 token 的输出
+- 问答：预测答案的起始和结束位置
+
+---
+
+## "Training language models to follow instructions" (InstructGPT, 2022)
+
+**作者**：Ouyang et al. (OpenAI)  
+**意义**：提出 RLHF 方法，让大模型对齐人类意图。
+
+### 三步流程
+
+1. **SFT（监督微调）**：收集人类写的 prompt-answer 对，微调 GPT-3
+2. **RM（奖励模型训练）**：让标注员对多个回答排序，训练奖励模型
+3. **PPO（强化学习）**：用奖励模型通过 PPO 算法优化策略
+
+### 关键发现
+
+- 1.3B 的 InstructGPT 比 175B 的 GPT-3 更受人类偏好
+- RLHF 显著减少了有害输出和编造信息
+- 在"真实性"（Truthfulness）指标上大幅提升
+
+### 后续影响
+
+- RLHF 成为 ChatGPT、Claude 等产品的核心对齐技术
+- DPO (2023) 提出了更简单的替代方案，无需显式训练奖励模型
+
+---
+
+## 论文阅读建议
+
+- 先读 Abstract + Conclusion，了解核心贡献
+- 再看图和表，理解架构
+- 最后读实验细节
+- 配合代码实现加深理解
+
+### 相关页面
+
+- [核心概念](/notes/concepts/) — 论文中的关键技术
+- [模型族谱](/notes/models/) — 论文背后的模型

@@ -1,44 +1,130 @@
 ---
 title: 工具生态
-description: AI 开发常用工具和框架
+description: AI 开发常用工具与框架，附使用示例
 ---
 
-## 工具生态
+## 核心工具栈
 
-AI 开发中常用的工具、框架和平台。
+### PyTorch — 深度学习框架
 
-### 模型开发
+绝大多数 AI 研究基于 PyTorch。提供了灵活的自动微分和 GPU 加速。
 
-| 工具 | 用途 | 推荐度 |
-|------|------|--------|
-| PyTorch | 深度学习框架 | ⭐⭐⭐⭐⭐ |
-| HuggingFace Transformers | 预训练模型库 | ⭐⭐⭐⭐⭐ |
-| vLLM | 高性能推理 | ⭐⭐⭐⭐ |
-| Ollama | 本地运行大模型 | ⭐⭐⭐⭐ |
+```python
+import torch
+import torch.nn as nn
 
-### LLM 应用开发
+# 定义一个简单的 MLP
+class MLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(768, 256),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(256, 10),
+        )
 
-| 工具 | 用途 | 推荐度 |
-|------|------|--------|
-| LangChain | LLM 应用框架 | ⭐⭐⭐⭐ |
-| LlamaIndex | 数据索引框架 | ⭐⭐⭐⭐ |
-| LangGraph | Agent 编排 | ⭐⭐⭐⭐ |
-| Dify | 低代码 AI 应用 | ⭐⭐⭐ |
+    def forward(self, x):
+        return self.layers(x)
+
+model = MLP()
+x = torch.randn(4, 768)  # batch=4
+output = model(x)
+print(output.shape)  # torch.Size([4, 10])
+```
+
+### HuggingFace Transformers — 预训练模型库
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+# 加载模型和分词器
+model_name = "gpt2"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
+
+# 生成文本
+inputs = tokenizer("The future of AI is", return_tensors="pt")
+outputs = model.generate(**inputs, max_new_tokens=30)
+print(tokenizer.decode(outputs[0]))
+```
+
+### LangChain — LLM 应用框架
+
+```python
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+
+llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "你是一个 AI 技术专家。"),
+    ("human", "用一句话解释 {concept}"),
+])
+
+chain = prompt | llm
+response = chain.invoke({"concept": "Transformer"})
+print(response.content)
+```
+
+### Ollama — 本地运行大模型
+
+```bash
+# 安装后下载模型
+ollama pull llama3.2
+
+# 命令行使用
+ollama run llama3.2 "解释什么是注意力机制"
+
+# Python 调用
+pip install ollama
+```
+
+```python
+import ollama
+
+response = ollama.chat(
+    model="llama3.2",
+    messages=[{"role": "user", "content": "什么是 Transformer？"}],
+)
+print(response["message"]["content"])
+```
 
 ### 向量数据库
 
-| 工具 | 特点 | 推荐度 |
-|------|------|--------|
-| Chroma | 轻量级，适合原型 | ⭐⭐⭐ |
-| Milvus | 高性能，生产级 | ⭐⭐⭐⭐ |
-| Pinecone | 全托管，省心 | ⭐⭐⭐⭐ |
-| pgvector | PostgreSQL 扩展 | ⭐⭐⭐ |
+```python
+import chromadb
 
-### 开发平台
+# 创建 Chroma 客户端
+client = chromadb.Client()
+collection = client.create_collection("docs")
 
-- HuggingFace Spaces
-- Replicate
-- Together AI
-- Groq
+# 添加文档
+collection.add(
+    documents=["Transformer 是 Attention 机制的架构", "CNN 用于图像处理"],
+    ids=["doc1", "doc2"],
+)
 
-> 📝 各工具的详细使用指南正在编写中，敬请期待。
+# 查询
+results = collection.query(
+    query_texts=["什么是 Attention"],
+    n_results=1,
+)
+print(results["documents"][0])  # ['Transformer 是 Attention 机制的架构']
+```
+
+### 工具选择指南
+
+| 场景 | 推荐工具 |
+|------|----------|
+| 模型训练 | PyTorch + HuggingFace |
+| 快速原型 | Ollama + LangChain |
+| 生产部署 | vLLM / TGI |
+| 向量检索 | Chroma (原型) / Milvus (生产) |
+| 数据标注 | Label Studio |
+| 实验追踪 | Weights & Biases |
+
+### 相关页面
+
+- [核心概念](/notes/concepts/) — 工具背后的技术原理
+- [模型族谱](/notes/models/) — 你用这些工具运行的模型
