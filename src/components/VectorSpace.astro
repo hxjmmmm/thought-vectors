@@ -28,10 +28,8 @@
   const isDark = document.documentElement.dataset.theme === 'dark' ||
     (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  const palette = [
-    '#60a5fa', '#a78bfa', '#f472b6', '#38bdf8',
-    '#818cf8', '#fb7185', '#22d3ee', '#c084fc',
-  ];
+  // 简洁配色：蓝紫渐变
+  const palette = ['#3b82f6', '#6366f1', '#8b5cf6', '#a78bfa'];
 
   // 知识图谱数据
   const data = {
@@ -111,12 +109,12 @@
 
   // 分组颜色
   const groupColors = {
-    core:  palette[0],
-    mech:  palette[1],
-    base:  palette[2],
-    model: palette[3],
-    train: palette[4],
-    app:   palette[5],
+    core:  '#3b82f6',
+    mech:  '#6366f1',
+    base:  '#8b5cf6',
+    model: '#3b82f6',
+    train: '#6366f1',
+    app:   '#8b5cf6',
   };
 
   const groupNames = {
@@ -138,16 +136,16 @@
     .nodeRelSize(5)
     .nodeVal(n => n.val)
     .nodeColor(n => groupColors[n.group] || palette[0])
-    .nodeOpacity(0.9)
-    .nodeResolution(16)
-    // 节点标签
+    .nodeOpacity(0.75)
+    .nodeResolution(20)
+    // 节点标签 — 白色文字，清晰可读
     .nodeThreeObject(node => {
       const sprite = new SpriteText(node.id);
-      sprite.fontSize = 40;
-      sprite.color = groupColors[node.group] || '#fff';
+      sprite.fontSize = 50;
+      sprite.color = isDark ? '#e2e8f0' : '#1e293b';
       sprite.fontWeight = 'bold';
-      sprite.textHeight = 3;
-      sprite.position.y = node.val * 0.3 + 0.8;
+      sprite.textHeight = 4;
+      sprite.position.y = node.val * 0.3 + 1;
       return sprite;
     })
     .nodeThreeObjectExtend(true)
@@ -157,7 +155,7 @@
       const sourceNode = data.nodes.find(n => n.id === (typeof l.source === 'object' ? l.source.id : l.source));
       return sourceNode ? groupColors[sourceNode.group] : '#475569';
     })
-    .linkOpacity(0.25)
+    .linkOpacity(0.15)
     .linkDirectionalParticles(2)
     .linkDirectionalParticleWidth(1.5)
     .linkDirectionalParticleSpeed(0.004)
