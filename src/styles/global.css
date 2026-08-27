@@ -23,7 +23,7 @@
 
 /* 首页：内容区更宽，图形更大 */
 [data-page-title="思维向量"] .sl-container {
-  max-width: 56rem;
+  max-width: 52rem;
 }
 
 /* 缩小 splash hero 与下方内容的间距 */
