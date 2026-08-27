@@ -132,8 +132,10 @@
     .graphData(data)
     .backgroundColor('rgba(0,0,0,0)')
     .showNavInfo(false)
+    .width(container.clientWidth)
+    .height(container.clientHeight)
     // 节点样式
-    .nodeRelSize(4)
+    .nodeRelSize(5)
     .nodeVal(n => n.val)
     .nodeColor(n => groupColors[n.group] || palette[0])
     .nodeOpacity(0.9)
@@ -155,14 +157,12 @@
       const sourceNode = data.nodes.find(n => n.id === (typeof l.source === 'object' ? l.source.id : l.source));
       return sourceNode ? groupColors[sourceNode.group] : '#475569';
     })
-    .linkOpacity(0.3)
+    .linkOpacity(0.25)
     .linkDirectionalParticles(2)
     .linkDirectionalParticleWidth(1.5)
     .linkDirectionalParticleSpeed(0.004)
-    // 自动旋转
     .enableNodeDrag(false)
     .enableNavigationControls(true)
-    // 提示
     .onNodeHover((node, prev) => {
       if (node) {
         container.style.cursor = 'pointer';
@@ -183,7 +183,6 @@
       }
     })
     .onNodeClick(node => {
-      // 聚焦节点
       const dist = 40;
       const nodePos = { x: node.x, y: node.y, z: node.z };
       Graph.cameraPosition(
@@ -191,7 +190,23 @@
         nodePos,
         1500
       );
-    })
-    // 力模拟
-    .d3Force('charge')?.strength(-120);
+    });
+
+  // 配置力模拟
+  Graph.d3Force('charge').strength(-400);
+  Graph.d3Force('link').distance(50);
+  Graph.d3Force('center').strength(0.8);
+  Graph.d3VelocityDecay(0.4);
+  Graph.numDimensions(3);
+
+  // 力模拟稳定后居中
+  setTimeout(() => {
+    Graph.zoomToFit(400, 80);
+  }, 2500);
+
+  // 响应式
+  window.addEventListener('resize', () => {
+    Graph.width(container.clientWidth);
+    Graph.height(container.clientHeight);
+  });
 </script>
