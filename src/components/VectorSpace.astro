@@ -1,5 +1,5 @@
 ---
-// 知识星系 — 3D 力导向知识图谱
+// 知识星系 — 自然漂浮的知识星云
 ---
 
 <div id="knowledge-galaxy" class="knowledge-galaxy"></div>
@@ -11,200 +11,261 @@
     position: relative;
     margin: 0;
     background: transparent;
-    border-radius: 0.75rem;
     overflow: hidden;
+    cursor: grab;
   }
+  .knowledge-galaxy:active { cursor: grabbing; }
   @media (max-width: 768px) {
-    .knowledge-galaxy { height: 360px; }
+    .knowledge-galaxy { height: 380px; }
   }
 </style>
 
 <script>
-  import ForceGraph3D from '3d-force-graph';
-  import SpriteText from 'three-spritetext';
   import * as THREE from 'three';
 
   const container = document.getElementById('knowledge-galaxy');
   const isDark = document.documentElement.dataset.theme === 'dark' ||
     (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  // 简洁配色：蓝紫渐变
-  const palette = ['#3b82f6', '#6366f1', '#8b5cf6', '#a78bfa'];
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+  camera.position.set(0, 0, 10);
 
-  // 知识图谱数据
-  const data = {
-    nodes: [
-      { id: 'Transformer',  group: 'core',  val: 16 },
-      { id: 'Attention',    group: 'mech',  val: 12 },
-      { id: 'Embedding',    group: 'base',  val: 10 },
-      { id: 'GPT',          group: 'model', val: 14 },
-      { id: 'BERT',         group: 'model', val: 11 },
-      { id: 'RLHF',         group: 'train', val: 10 },
-      { id: 'RAG',          group: 'app',   val: 12 },
-      { id: 'LoRA',         group: 'train', val: 9 },
-      { id: 'CNN',          group: 'base',  val: 10 },
-      { id: 'RNN',          group: 'base',  val: 9 },
-      { id: 'Diffusion',    group: 'model', val: 10 },
-      { id: 'Agent',        group: 'app',   val: 11 },
-      { id: 'Tokenization', group: 'base',  val: 9 },
-      { id: 'MoE',          group: 'mech',  val: 9 },
-      { id: 'Prompt',       group: 'app',   val: 11 },
-      { id: 'DPO',          group: 'train', val: 9 },
-      { id: 'KV Cache',     group: 'mech',  val: 8 },
-      { id: 'SFT',          group: 'train', val: 9 },
-      { id: 'LangChain',    group: 'app',   val: 10 },
-      { id: 'Vector DB',    group: 'app',   val: 9 },
-      { id: 'Flash Attn',   group: 'mech',  val: 8 },
-      { id: 'GAN',          group: 'model', val: 9 },
-      { id: 'GPTQ',         group: 'train', val: 8 },
-      { id: 'DeepSeek',     group: 'model', val: 12 },
-    ],
-    links: [
-      { source: 'Transformer', target: 'Attention',    val: 3 },
-      { source: 'Transformer', target: 'Embedding',    val: 2 },
-      { source: 'Transformer', target: 'GPT',          val: 3 },
-      { source: 'Transformer', target: 'BERT',         val: 2 },
-      { source: 'Transformer', target: 'RLHF',         val: 2 },
-      { source: 'Transformer', target: 'Flash Attn',   val: 2 },
-      { source: 'Attention',   target: 'Embedding',    val: 2 },
-      { source: 'Attention',   target: 'KV Cache',     val: 3 },
-      { source: 'Attention',   target: 'Flash Attn',   val: 3 },
-      { source: 'Embedding',   target: 'Tokenization', val: 3 },
-      { source: 'GPT',         target: 'RLHF',         val: 3 },
-      { source: 'GPT',         target: 'SFT',          val: 2 },
-      { source: 'GPT',         target: 'DPO',          val: 2 },
-      { source: 'GPT',         target: 'LoRA',         val: 2 },
-      { source: 'GPT',         target: 'GPTQ',         val: 2 },
-      { source: 'GPT',         target: 'DeepSeek',     val: 2 },
-      { source: 'GPT',         target: 'Prompt',       val: 2 },
-      { source: 'BERT',        target: 'Embedding',    val: 2 },
-      { source: 'BERT',        target: 'Tokenization', val: 2 },
-      { source: 'RLHF',        target: 'DPO',          val: 3 },
-      { source: 'RLHF',        target: 'SFT',          val: 2 },
-      { source: 'RAG',         target: 'Transformer',  val: 2 },
-      { source: 'RAG',         target: 'Prompt',       val: 3 },
-      { source: 'RAG',         target: 'Vector DB',    val: 3 },
-      { source: 'RAG',         target: 'LangChain',    val: 2 },
-      { source: 'Agent',       target: 'RAG',          val: 3 },
-      { source: 'Agent',       target: 'Prompt',       val: 2 },
-      { source: 'Agent',       target: 'LangChain',    val: 2 },
-      { source: 'CNN',         target: 'RNN',          val: 2 },
-      { source: 'CNN',         target: 'Transformer',  val: 2 },
-      { source: 'RNN',         target: 'Transformer',  val: 2 },
-      { source: 'Diffusion',   target: 'GAN',          val: 2 },
-      { source: 'Diffusion',   target: 'Transformer',  val: 1 },
-      { source: 'GAN',         target: 'CNN',          val: 2 },
-      { source: 'LoRA',        target: 'Transformer',  val: 2 },
-      { source: 'MoE',         target: 'Transformer',  val: 2 },
-      { source: 'MoE',         target: 'GPT',          val: 2 },
-      { source: 'MoE',         target: 'DeepSeek',     val: 2 },
-      { source: 'DPO',         target: 'SFT',          val: 2 },
-      { source: 'KV Cache',    target: 'GPT',          val: 2 },
-      { source: 'KV Cache',    target: 'Flash Attn',   val: 2 },
-      { source: 'LangChain',   target: 'Vector DB',    val: 2 },
-      { source: 'DeepSeek',    target: 'MoE',          val: 3 },
-      { source: 'DeepSeek',    target: 'GPTQ',         val: 2 },
-    ],
-  };
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  container.appendChild(renderer.domElement);
 
-  // 分组颜色
-  const groupColors = {
-    core:  '#3b82f6',
-    mech:  '#6366f1',
-    base:  '#8b5cf6',
-    model: '#3b82f6',
-    train: '#6366f1',
-    app:   '#8b5cf6',
-  };
+  // 配色
+  const colors = isDark
+    ? ['#60a5fa', '#818cf8', '#a78bfa', '#c084fc', '#38bdf8', '#22d3ee']
+    : ['#2563eb', '#4f46e5', '#7c3aed', '#9333ea', '#0284c7', '#0891b2'];
 
-  const groupNames = {
-    core:  '核心架构',
-    mech:  '核心机制',
-    base:  '基础概念',
-    model: '模型',
-    train: '训练方法',
-    app:   '应用技术',
-  };
+  // 知识节点
+  const nodes = [
+    { id: 'Transformer',  x: 0.0, y: 0.0, z: 0.0, size: 0.18 },
+    { id: 'Attention',    x: 1.1, y: 0.5, z: 0.6, size: 0.12 },
+    { id: 'Embedding',    x: -1.0, y: -0.4, z: 0.5, size: 0.11 },
+    { id: 'GPT',          x: 0.7, y: -0.9, z: -0.5, size: 0.13 },
+    { id: 'BERT',         x: -0.8, y: 0.7, z: -0.6, size: 0.11 },
+    { id: 'RLHF',         x: 1.2, y: -0.2, z: -0.8, size: 0.10 },
+    { id: 'RAG',          x: -0.5, y: -1.0, z: -0.7, size: 0.12 },
+    { id: 'LoRA',         x: -1.1, y: 0.2, z: 0.8, size: 0.10 },
+    { id: 'CNN',          x: 0.6, y: 1.0, z: -0.3, size: 0.10 },
+    { id: 'Diffusion',    x: 0.4, y: -1.1, z: 0.5, size: 0.10 },
+    { id: 'Agent',        x: -1.0, y: -0.7, z: -0.3, size: 0.11 },
+    { id: 'Tokenization', x: 0.2, y: 0.3, z: 1.1, size: 0.09 },
+    { id: 'MoE',          x: -0.6, y: -0.2, z: -1.0, size: 0.09 },
+    { id: 'Prompt',       x: 1.0, y: -0.8, z: 0.3, size: 0.11 },
+    { id: 'DPO',          x: 0.0, y: -0.5, z: -1.1, size: 0.09 },
+    { id: 'KV Cache',     x: 0.8, y: 0.3, z: -1.0, size: 0.09 },
+    { id: 'LangChain',    x: -0.8, y: -0.9, z: -0.5, size: 0.10 },
+    { id: 'Vector DB',    x: -1.1, y: -0.5, z: 0.3, size: 0.09 },
+    { id: 'DeepSeek',     x: 0.9, y: 0.7, z: 0.4, size: 0.11 },
+    { id: 'GAN',          x: -0.9, y: 0.9, z: -0.2, size: 0.09 },
+  ];
 
-  const Graph = ForceGraph3D({ controlType: 'orbit' })(container)
-    .graphData(data)
-    .backgroundColor('rgba(0,0,0,0)')
-    .showNavInfo(false)
-    .width(container.clientWidth)
-    .height(container.clientHeight)
-    // 节点样式
-    .nodeRelSize(5)
-    .nodeVal(n => n.val)
-    .nodeColor(n => groupColors[n.group] || palette[0])
-    .nodeOpacity(0.75)
-    .nodeResolution(20)
-    // 节点标签 — 白色文字，清晰可读
-    .nodeThreeObject(node => {
-      const sprite = new SpriteText(node.id);
-      sprite.fontSize = 50;
-      sprite.color = isDark ? '#e2e8f0' : '#1e293b';
-      sprite.fontWeight = 'bold';
-      sprite.textHeight = 4;
-      sprite.position.y = node.val * 0.3 + 1;
-      return sprite;
-    })
-    .nodeThreeObjectExtend(true)
-    // 连线
-    .linkWidth(l => l.val * 0.5)
-    .linkColor(l => {
-      const sourceNode = data.nodes.find(n => n.id === (typeof l.source === 'object' ? l.source.id : l.source));
-      return sourceNode ? groupColors[sourceNode.group] : '#475569';
-    })
-    .linkOpacity(0.15)
-    .linkDirectionalParticles(2)
-    .linkDirectionalParticleWidth(1.5)
-    .linkDirectionalParticleSpeed(0.004)
-    .enableNodeDrag(false)
-    .enableNavigationControls(true)
-    .onNodeHover((node, prev) => {
-      if (node) {
-        container.style.cursor = 'pointer';
-        const el = document.querySelector('.graph-info-3d');
-        if (!el) {
-          const div = document.createElement('div');
-          div.className = 'graph-info-3d';
-          div.style.cssText = 'position:absolute;top:1rem;left:50%;transform:translateX(-50%);background:var(--sl-color-gray-7);color:var(--sl-color-text);border:1px solid var(--sl-color-gray-4);border-radius:0.5rem;padding:0.4rem 0.9rem;font-size:0.85rem;font-weight:600;pointer-events:none;z-index:10;transition:opacity 0.15s;';
-          container.appendChild(div);
-        }
-        const info = container.querySelector('.graph-info-3d');
-        info.innerHTML = `${node.id} <span style="font-weight:400;font-size:0.7rem;color:var(--sl-color-gray-2);margin-left:4px;">${groupNames[node.group]}</span>`;
-        info.style.opacity = '1';
-      } else {
-        container.style.cursor = 'grab';
-        const info = container.querySelector('.graph-info-3d');
-        if (info) info.style.opacity = '0';
-      }
-    })
-    .onNodeClick(node => {
-      const dist = 40;
-      const nodePos = { x: node.x, y: node.y, z: node.z };
-      Graph.cameraPosition(
-        { x: nodePos.x + dist * 0.6, y: nodePos.y + dist * 0.4, z: nodePos.z + dist },
-        nodePos,
-        1500
-      );
+  // 连线关系
+  const links = [
+    [0,1],[0,2],[0,3],[0,4],[0,5],
+    [1,2],[1,15],
+    [2,11],[2,4],
+    [3,5],[3,7],[3,14],[3,18],
+    [4,2],[4,11],
+    [5,14],
+    [6,0],[6,13],[6,17],
+    [7,0],[7,3],
+    [8,0],
+    [9,10],[9,0],
+    [10,6],[10,13],[10,16],
+    [11,2],[11,4],
+    [12,0],[12,3],
+    [13,3],[13,0],
+    [14,5],
+    [15,1],[15,3],
+    [16,10],[16,6],
+    [17,6],[17,16],
+    [18,12],[18,3],
+    [19,8],[19,9],
+  ];
+
+  // 最外层淡色环
+  const ringGeo = new THREE.TorusGeometry(1.5, 0.005, 8, 100);
+  const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
+    color: isDark ? 0x475569 : 0x94a3b8, transparent: true, opacity: 0.12,
+  }));
+  ring.rotation.x = Math.PI / 2;
+  scene.add(ring);
+
+  // 创建发光节点
+  const nodeGroup = new THREE.Group();
+  const nodeMeshes = [];
+  const labelSprites = [];
+
+  for (const node of nodes) {
+    const color = colors[nodes.indexOf(node) % colors.length];
+    const geo = new THREE.SphereGeometry(node.size, 24, 24);
+    const mat = new THREE.MeshStandardMaterial({
+      color, emissive: color, emissiveIntensity: 0.7,
+      roughness: 0.3, metalness: 0.2,
     });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(node.x, node.y, node.z);
+    mesh.userData = { node, color, baseX: node.x, baseY: node.y, baseZ: node.z };
+    nodeGroup.add(mesh);
+    nodeMeshes.push(mesh);
 
-  // 配置力模拟
-  Graph.d3Force('charge').strength(-400);
-  Graph.d3Force('link').distance(50);
-  Graph.d3Force('center').strength(0.8);
-  Graph.d3VelocityDecay(0.4);
-  Graph.numDimensions(3);
+    // 光晕
+    const hc = document.createElement('canvas'); hc.width = 64; hc.height = 64;
+    const hctx = hc.getContext('2d');
+    const hg = hctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    hg.addColorStop(0, color + '88'); hg.addColorStop(0.4, color + '18'); hg.addColorStop(1, 'transparent');
+    hctx.fillStyle = hg; hctx.fillRect(0, 0, 64, 64);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(hc), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.5,
+    }));
+    halo.position.copy(mesh.position);
+    halo.scale.set(0.7, 0.7, 1);
+    nodeGroup.add(halo);
 
-  // 力模拟稳定后居中
-  setTimeout(() => {
-    Graph.zoomToFit(400, 80);
-  }, 2500);
+    // 标签
+    const lc = document.createElement('canvas'); lc.width = 256; lc.height = 80;
+    const lctx = lc.getContext('2d');
+    const fontSize = 32;
+    lctx.font = `bold ${fontSize}px "Inter","PingFang SC","Microsoft YaHei",sans-serif`;
+    const tm = lctx.measureText(node.id);
+    const tw = tm.width, th = fontSize, padX = 10, padY = 4;
+    const bw = tw + padX * 2, bh = th + padY * 2;
+    const bx = (256 - bw) / 2, by = (80 - bh) / 2;
+    lctx.fillStyle = isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)';
+    lctx.beginPath(); lctx.roundRect(bx, by, bw, bh, 12); lctx.fill();
+    lctx.strokeStyle = color; lctx.lineWidth = 1.5;
+    lctx.beginPath(); lctx.roundRect(bx, by, bw, bh, 12); lctx.stroke();
+    lctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
+    lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
+    lctx.fillText(node.id, 128, 40);
+    const labelTex = new THREE.CanvasTexture(lc);
+    labelTex.minFilter = THREE.LinearFilter; labelTex.magFilter = THREE.LinearFilter;
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex, depthTest: false, depthWrite: false, transparent: true }));
+    label.position.copy(mesh.position);
+    label.position.y += node.size + 0.3;
+    label.scale.set(0.85, 0.27, 1);
+    nodeGroup.add(label);
+    labelSprites.push({ sprite: label, mesh, offsetY: node.size + 0.3 });
+  }
+  scene.add(nodeGroup);
 
-  // 响应式
+  // 曲线连线 — 自然弧线
+  const linkGroup = new THREE.Group();
+  for (const [a, b] of links) {
+    const from = new THREE.Vector3(nodes[a].x, nodes[a].y, nodes[a].z);
+    const to = new THREE.Vector3(nodes[b].x, nodes[b].y, nodes[b].z);
+    const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
+    const offset = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.5,
+      (Math.random() - 0.5) * 0.5,
+      (Math.random() - 0.5) * 0.5
+    );
+    mid.add(offset);
+    const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
+    const points = curve.getPoints(20);
+    const linkGeo = new THREE.BufferGeometry().setFromPoints(points);
+    const link = new THREE.Line(linkGeo, new THREE.LineBasicMaterial({
+      color: colors[a % colors.length], transparent: true, opacity: 0.12,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    linkGroup.add(link);
+  }
+  scene.add(linkGroup);
+
+  // 粒子
+  const pCount = 60;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for (let i = 0; i < pCount; i++) {
+    const theta = Math.random() * Math.PI * 2, phi = Math.acos(2 * Math.random() - 1);
+    const r = 1.4 + Math.random() * 0.3;
+    pPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    pPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    pPos[i * 3 + 2] = r * Math.cos(phi);
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const dc = document.createElement('canvas'); dc.width = 16; dc.height = 16;
+  const dctx = dc.getContext('2d');
+  const dg = dctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+  dg.addColorStop(0, 'rgba(255,255,255,1)'); dg.addColorStop(0.3, 'rgba(255,255,255,0.4)'); dg.addColorStop(1, 'transparent');
+  dctx.fillStyle = dg; dctx.fillRect(0, 0, 16, 16);
+  const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({
+    size: 0.03, map: new THREE.CanvasTexture(dc), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.5,
+  }));
+  scene.add(particles);
+
+  // 光照
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.6);
+  dl.position.set(2, 3, 4); scene.add(dl);
+
+  // 交互
+  let mx = 0, my = 0;
+  let dragging = false, pmx = 0, pmy = 0;
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  container.addEventListener('mousemove', (e) => {
+    const rect = container.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    if (dragging) {
+      mx += (mouse.x - pmx) * 0.5;
+      my += (mouse.y - pmy) * 0.5;
+    }
+    pmx = mouse.x; pmy = mouse.y;
+  });
+  container.addEventListener('mousedown', () => { dragging = true; });
+  container.addEventListener('mouseup', () => { dragging = false; });
+  container.addEventListener('mouseleave', () => { dragging = false; });
+
+  // 动画
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.1);
+    const t = performance.now() * 0.001;
+
+    // 缓缓旋转
+    if (!dragging) {
+      nodeGroup.rotation.y += dt * 0.08;
+      linkGroup.rotation.y += dt * 0.08;
+      particles.rotation.y += dt * 0.08;
+      ring.rotation.z += dt * 0.04;
+    }
+    // 拖拽旋转
+    nodeGroup.rotation.y += (mx - nodeGroup.rotation.y) * 0.03;
+    nodeGroup.rotation.x += (my - nodeGroup.rotation.x) * 0.03;
+    linkGroup.rotation.copy(nodeGroup.rotation);
+    particles.rotation.copy(nodeGroup.rotation);
+
+    // 节点呼吸
+    for (const mesh of nodeMeshes) {
+      const { baseX, baseY, baseZ } = mesh.userData;
+      const breathe = 1 + Math.sin(t * 1.2 + baseX * 3) * 0.03;
+      mesh.scale.setScalar(breathe);
+    }
+
+    // 标签跟随
+    for (const { sprite, mesh, offsetY } of labelSprites) {
+      sprite.position.copy(mesh.position);
+      sprite.position.y += offsetY * mesh.scale.y;
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
   window.addEventListener('resize', () => {
-    Graph.width(container.clientWidth);
-    Graph.height(container.clientHeight);
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
   });
 </script>
