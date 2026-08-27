@@ -1,0 +1,108 @@
+/* Tailwind CSS */
+@import "tailwindcss";
+
+/* KaTeX 数学公式样式 */
+@import "katex/dist/katex.min.css";
+
+/* ===== Starlight 主题定制 ===== */
+
+/* 暗色模式下的 KaTeX 适配 */
+:root[data-theme="dark"] .katex {
+  color: #e5e7eb;
+}
+
+/* 代码块圆角 */
+.starlight-aside {
+  border-radius: 0.5rem;
+}
+
+/* 让内容区更宽一点 */
+:root {
+  --sl-content-width: 50rem;
+}
+
+/* 链接 hover 效果 */
+.sl-markdown-content a {
+  transition: color 0.15s ease;
+}
+
+/* 表格样式 */
+.sl-markdown-content table {
+  font-size: 0.875rem;
+}
+
+.sl-markdown-content th {
+  background: var(--sl-color-gray-1);
+  font-weight: 600;
+}
+
+/* 图片居中 */
+.sl-markdown-content img {
+  margin: 1.5rem auto;
+  border-radius: 0.5rem;
+}
+
+/* 自定义 Callout 颜色 */
+.starlight-aside--tip {
+  --sl-color-asides-text-accent: #059669;
+  border-left-color: #059669;
+}
+
+.starlight-aside--caution {
+  --sl-color-asides-text-accent: #d97706;
+  border-left-color: #d97706;
+}
+
+/* 首页 Hero 样式 */
+.home-hero {
+  text-align: center;
+  padding: 4rem 1rem 2rem;
+}
+
+.home-hero h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.home-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem 0;
+}
+
+.home-feature-card {
+  padding: 1.5rem;
+  border: 1px solid var(--sl-color-gray-3);
+  border-radius: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.home-feature-card:hover {
+  border-color: var(--sl-color-text-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.home-feature-card h3 {
+  margin-top: 0;
+  font-size: 1.25rem;
+}
+
+.home-feature-card p {
+  color: var(--sl-color-gray-2);
+  margin: 0;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .home-hero {
+    padding: 2rem 1rem 1rem;
+  }
+  .home-hero h1 {
+    font-size: 2rem;
+  }
+}

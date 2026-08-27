@@ -1,0 +1,149 @@
+---
+title: 1. Transformer 架构总览
+description: 理解 Transformer 的整体架构设计——为什么它彻底改变了 AI
+---
+
+## 为什么需要 Transformer？
+
+在 Transformer 出现之前，处理序列数据（文本、语音）的主流方案是 RNN/LSTM。它们的问题很明显：
+
+1. **串行计算，无法并行**：第 3 个词的输出依赖第 2 个词的计算结果，第 2 个又依赖第 1 个。GPU 的强大并行能力被浪费了。
+2. **长距离依赖弱**：句子长了，前面的信息传到后面就"衰减"了。LSTM 试图解决这个问题，但效果有限。
+
+2017 年，Google 的论文 [Attention Is All You Need](https://arxiv.org/abs/1706.03762) 提出了 Transformer，**完全抛弃了循环结构，只用注意力机制**。这个设计让模型可以并行计算，同时任意两个位置的词都能直接"看到"彼此。
+
+> 💡 这篇论文是目前整个大模型时代的起点。ChatGPT、Claude、Gemini 的底层架构全部源自这里。
+
+## 整体架构
+
+Transformer 采用 **Encoder-Decoder** 结构：
+
+```
+输入句子: "我 喜欢 机器学习"
+                │
+                ▼
+    ┌───────────────────────┐
+    │     Input Embedding    │  ← 把词变成向量
+    │   + Positional Encoding │  ← 加上位置信息
+    └───────────┬───────────┘
+                │
+                ▼
+    ┌───────────────────────┐
+    │   Multi-Head Attention │  ← 每个词"看"所有词
+    │     + Add & Norm       │
+    └───────────┬───────────┘
+                │
+                ▼
+    ┌───────────────────────┐
+    │    Feed Forward        │  ← 非线性变换
+    │     + Add & Norm       │
+    └───────────┬───────────┘
+                │
+        重复 N 次（Encoder）
+                │
+                ▼
+    ┌───────────────────────┐
+    │       Decoder          │  ← 逐个生成输出
+    └───────────────────────┘
+                │
+                ▼
+输出句子: "I like machine learning"
+```
+
+### 六个核心组件
+
+| 组件 | 作用 | 一句话 |
+|------|------|--------|
+| **Input Embedding** | 把词 ID 映射为稠密向量 | 词 → 数字 |
+| **Positional Encoding** | 告诉模型每个词的位置 | 第 1 个词 vs 第 5 个词 |
+| **Multi-Head Attention** | 让每个词关注所有相关词 | "它"指的是"苹果"还是"手机" |
+| **Add & Norm** | 残差连接 + 层归一化 | 让深层网络稳定训练 |
+| **Feed Forward** | 对每个位置的向量做非线性变换 | 增加表达能力 |
+| **Linear + Softmax** | 输出每个词的概率 | 下一个词是什么 |
+
+## 数据流：一个具体的例子
+
+假设我们要翻译：**"我 喜欢 机器学习"** → **"I like machine learning"**
+
+### Encoder 阶段
+
+```
+输入: ["我", "喜欢", "机器学习"]
+        │
+        ▼
+Embedding: 每个词 → 512 维向量
+        │
+        ▼
++ Positional Encoding（告诉模型"我"在第 1 位）
+        │
+        ▼
+Self-Attention:
+  "我"      看  ["我", "喜欢", "机器学习"]
+  "喜欢"    看  ["我", "喜欢", "机器学习"]
+  "机器学习" 看  ["我", "喜欢", "机器学习"]
+        │
+        ▼
+Feed Forward → 输出每个词的上下文表示
+```
+
+关键在于：**Self-Attention 让每个词都能同时看到整个句子**。不再像 RNN 那样只能"从左读到右"。
+
+### Decoder 阶段
+
+Decoder 逐步生成输出：
+
+```
+Step 1: 输入 <s>               → 输出 "I"
+Step 2: 输入 <s> I             → 输出 "like"
+Step 3: 输入 <s> I like        → 输出 "machine"
+Step 4: 输入 <s> I like machine → 输出 "learning"
+Step 5: 输入完整序列            → 输出 </s>（结束）
+```
+
+Decoder 的 Attention 有两个来源：
+- **Masked Self-Attention**：看自己已经生成的词（但不能偷看未来的词）
+- **Cross-Attention**：看 Encoder 的输出（源语言信息）
+
+## 为什么 Transformer 如此成功？
+
+### 1. 并行计算
+
+RNN 处理 100 个词需要 100 步，Transformer 只需 1 步。这让训练大规模模型成为可能。
+
+### 2. 长距离依赖
+
+两个相距 1000 个词的 token，在 Attention 机制下只需 1 跳就能交互，路径长度是 O(1)。RNN 需要 O(n) 步。
+
+### 3. 可解释性
+
+Attention 权重可以直接可视化，告诉我们模型在"看"哪里：
+
+```
+"The animal didn't cross the street because it was too tired"
+                                              ↑
+                                     "it" 的 attention 集中在 "animal"
+```
+
+### 4. 通用性
+
+Transformer 最初为翻译设计，但很快被证明是通用的序列处理架构：
+- **文本**：GPT、BERT、T5、LLaMA
+- **图像**：ViT（Vision Transformer）
+- **语音**：Whisper、Conformer
+- **代码**：Codex、Copilot
+- **多模态**：GPT-4V、Gemini
+
+## 后续章节预告
+
+| 章节 | 内容 |
+|------|------|
+| [2. Self-Attention 详解](/tutorials/transformer/self-attention/) | Q、K、V 矩阵的直观理解 |
+| [3. Multi-Head Attention](/tutorials/transformer/multi-head/) | 为什么需要多个"头" |
+| [4. 位置编码](/tutorials/transformer/positional-encoding/) | 正弦编码 vs 可学习编码 |
+| [5. 从零实现](/tutorials/transformer/implementation/) | 用 PyTorch 写一个 Mini Transformer |
+
+## 参考资料
+
+- [Attention Is All You Need](https://arxiv.org/abs/1706.03762) — 原始论文
+- [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/) — Jay Alammar 的经典可视化
+- [The Annotated Transformer](http://nlp.seas.harvard.edu/annotated-transformer/) — 哈佛的逐行代码注释
