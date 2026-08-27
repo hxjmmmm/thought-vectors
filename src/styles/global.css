@@ -27,15 +27,18 @@
 }
 
 /* 缩小 splash hero 与下方内容的间距 */
-.sl-hero {
+[data-has-hero] .hero {
   padding-bottom: 0 !important;
   padding-top: 1rem !important;
 }
-.sl-hero .sl-hero-actions {
-  margin-bottom: 0 !important;
-}
-.sl-hero p {
+[data-has-hero] .hero .copy {
   margin-bottom: 0.5rem !important;
+}
+[data-has-hero] .hero .actions {
+  margin-bottom: 0.5rem !important;
+}
+[data-has-hero] .hero .tagline {
+  margin-bottom: 0.25rem !important;
 }
 
 /* 链接 hover 效果 */
