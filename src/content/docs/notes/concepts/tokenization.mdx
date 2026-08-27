@@ -1,0 +1,106 @@
+---
+title: Tokenization
+description: 分词——把文本切成模型能处理的 token
+---
+
+## Tokenization（分词）
+
+Tokenization 是把原始文本转换成模型能理解的数字序列的过程。看似简单，实则影响模型的一切行为。
+
+### 为什么重要？
+
+同一个意思，不同切分方式会让模型"看到"完全不同的东西：
+
+```
+"我喜欢吃苹果"  → ["我", "喜欢", "吃", "苹果"]   # 词级别
+"unbelievable" → ["un", "believe", "able"]      # 子词级别
+"Hello world!" → ["Hello", " world", "!"]        # BPE
+```
+
+### 主流方法：BPE
+
+BPE（Byte Pair Encoding）是 GPT 系列使用的分词算法：
+
+1. 从字符级别开始
+2. 统计相邻 token 对的频率
+3. 合并最高频的 token 对
+4. 重复直到达到目标词表大小
+
+```python
+from transformers import AutoTokenizer
+
+# GPT-2 的分词器
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+
+text = "The Transformer architecture revolutionized AI."
+
+# 编码
+tokens = tokenizer.encode(text)
+print(f"Token IDs: {tokens}")
+print(f"Token 数量: {len(tokens)}")
+
+# 解码回文本
+decoded = tokenizer.decode(tokens)
+print(f"解码: {decoded}")
+
+# 查看每个 token
+for tid in tokens:
+    print(f"  {tid:>5} → '{tokenizer.decode([tid])}'")
+```
+
+输出示例：
+```
+Token IDs: [464, 24589, 7352, 20588, 9552, 13]
+Token 数量: 6
+解码: The Transformer architecture revolutionized AI.
+
+   464 → 'The'
+ 24589 → ' Transformer'
+  7352 → ' architecture'
+ 20588 → ' revolutionized'
+  9552 → ' AI'
+    13 → '.'
+```
+
+### 不同分词器对比
+
+```python
+from transformers import AutoTokenizer
+
+text = "Let's tokenize: AI isn't easy, but it's worth it! 🚀"
+
+for name in ["gpt2", "bert-base-uncased", "t5-small"]:
+    tok = AutoTokenizer.from_pretrained(name)
+    ids = tok.encode(text)
+    print(f"\n{name}: {len(ids)} tokens")
+    print([tok.decode([t]) for t in ids])
+```
+
+### 分词器的"坑"
+
+```python
+# 1. 数字处理不稳定
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+print(tokenizer.encode("2024"))   # [3879]
+print(tokenizer.encode("2025"))   # [3879, 362]  ← 不同长度！
+
+# 2. 大小写敏感
+print(tokenizer.encode("hello"))   # [31373]
+print(tokenizer.encode("Hello"))   # [15496]
+
+# 3. 空白字符占 token
+text = "Hello world"
+print(f"字符数: {len(text)}")
+print(f"Token 数: {len(tokenizer.encode(text))}")
+```
+
+### 关键概念
+
+- **词表大小**：GPT-4 约 100K tokens，Llama 约 32K
+- **特殊 token**：`<|endoftext|>`（分隔）、`<|user|>`（对话角色）
+- **中文分词**：中文 tokenizer 通常 1-2 个汉字构成一个 token，效率低于英文
+
+### 相关概念
+
+- [Embedding](#) — Token ID 之后一步
+- [KV Cache](#) — 分词影响推理效率

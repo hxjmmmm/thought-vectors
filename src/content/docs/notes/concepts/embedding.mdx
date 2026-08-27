@@ -1,0 +1,100 @@
+---
+title: Embedding
+description: 词嵌入——把文字变成机器能理解的数字向量
+---
+
+## Embedding（词嵌入）
+
+Embedding 是 NLP 的基石——把离散的词语映射到连续的向量空间。语义相近的词，向量距离也相近。
+
+### 为什么需要 Embedding？
+
+计算机只能处理数字。把"猫"映射为 1，"狗"映射为 2，会暗示"狗 = 2 × 猫"，这毫无意义。Embedding 用高维向量表示词，每个维度编码一种语义特征。
+
+### 数学形式
+
+一个 Embedding 层本质上是一个查找表：
+
+$$
+\text{Embedding}(x) = W_e[x]
+$$
+
+其中 $W_e \in \mathbb{R}^{V \times d}$，$V$ 是词表大小，$d$ 是嵌入维度。
+
+### 代码实现
+
+```python
+import torch
+import torch.nn as nn
+
+# 词表大小 10000，嵌入维度 512
+vocab_size = 10000
+embed_dim = 512
+
+embedding = nn.Embedding(vocab_size, embed_dim)
+
+# 一句话 8 个 token
+input_ids = torch.tensor([[15, 234, 1024, 56, 789, 0, 0, 0]])
+embeddings = embedding(input_ids)
+
+print(f"输入形状: {input_ids.shape}")     # (1, 8)
+print(f"输出形状: {embeddings.shape}")     # (1, 8, 512)
+```
+
+### 从零实现
+
+```python
+import torch
+import torch.nn as nn
+
+class Embedding(nn.Module):
+    def __init__(self, vocab_size, embed_dim):
+        super().__init__()
+        # 初始化权重矩阵
+        self.weight = nn.Parameter(
+            torch.randn(vocab_size, embed_dim) * 0.02
+        )
+
+    def forward(self, x):
+        # x: (batch, seq_len) 整数索引
+        # 返回: (batch, seq_len, embed_dim)
+        return self.weight[x]
+
+# 使用
+vocab_size, embed_dim = 10000, 512
+emb = Embedding(vocab_size, embed_dim)
+x = torch.randint(0, vocab_size, (2, 8))
+out = emb(x)
+print(out.shape)  # (2, 8, 512)
+```
+
+### Embedding 的语义空间
+
+训练好的 Embedding 有惊人的语义性质：
+
+```python
+# 经典类比：king - man + woman ≈ queen
+king   = embedding(tokens["king"])
+man    = embedding(tokens["man"])
+woman  = embedding(tokens["woman"])
+queen  = embedding(tokens["queen"])
+
+result = king - man + woman
+similarity = torch.cosine_similarity(result, queen, dim=-1)
+# similarity ≈ 0.7~0.8
+```
+
+### 常见 Embedding 类型
+
+| 类型 | 说明 | 例子 |
+|------|------|------|
+| Token Embedding | 词/子词的向量 | GPT 的词表嵌入 |
+| Position Embedding | 位置信息 | 正弦编码或可学习 |
+| Segment Embedding | 句子归属（BERT） | 句子 A 还是 B |
+| Type Embedding | 类型区分 | 用户/物品嵌入 |
+
+### 相关概念
+
+- [Tokenization](#) — 如何把文本切成 token
+- [Attention](#) — 拿到 Embedding 之后做什么
+- [位置编码](#) — 如何让模型知道词的位置

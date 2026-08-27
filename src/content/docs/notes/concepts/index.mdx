@@ -5,32 +5,23 @@ description: AI 领域核心概念详解
 
 ## 核心概念
 
-这里收录 AI 领域的核心概念，每张卡片聚焦一个知识点，并链接到相关概念和教程。
+每个概念聚焦一个知识点，配有数学公式和代码实现。
 
-### 概念索引
+### 已发布
 
-#### 机器学习基础
+- [**注意力机制**](/notes/concepts/attention/) — Scaled Dot-Product Attention 的数学原理与 PyTorch 实现
+- [**Embedding**](/notes/concepts/embedding/) — 词嵌入的原理、实现与语义空间
+- [**Tokenization**](/notes/concepts/tokenization/) — BPE 分词算法、主流 tokenizer 对比
+- [**KV Cache**](/notes/concepts/kv-cache/) — 推理加速核心技术，附自回归生成代码
 
-- 监督学习 vs 无监督学习 vs 强化学习
-- 偏差-方差权衡
-- 过拟合与欠拟合
-- 正则化方法
-- 损失函数
+### 待完成
 
-#### 深度学习
-
+- 位置编码（Sinusoidal、RoPE、ALiBi）
+- Multi-Head Attention
 - 激活函数（ReLU、GELU、SwiGLU）
 - 反向传播
 - 梯度消失与梯度爆炸
 - 优化器（SGD、Adam、AdamW）
-
-#### 大模型
-
-- Tokenization（BPE、WordPiece、SentencePiece）
-- Embedding 与向量表示
-- 位置编码（Sinusoidal、RoPE、ALiBi）
-- 注意力机制（Self-Attention、Cross-Attention、Flash Attention）
-- KV Cache
 - 量化（INT8、INT4、GPTQ、AWQ）
-
-> 📝 每张概念卡片正在编写中，敬请期待。
+- Layer Normalization vs Batch Normalization
+- 损失函数（Cross-Entropy、KL 散度）
