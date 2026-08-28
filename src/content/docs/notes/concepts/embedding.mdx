@@ -93,6 +93,17 @@ similarity = torch.cosine_similarity(result, queen, dim=-1)
 | Segment Embedding | 句子归属（BERT） | 句子 A 还是 B |
 | Type Embedding | 类型区分 | 用户/物品嵌入 |
 
+### Embedding 维度选择
+
+| 模型 | 词表大小 | 嵌入维度 | 特点 |
+|------|---------|---------|------|
+| GPT-2 | 50K | 768 | 较小模型 |
+| GPT-3 | 50K | 12,288 | 大模型，高维度 |
+| BERT-base | 30K | 768 | 经典配置 |
+| Llama 3 | 128K | 4,096 | 大词表+中等维度 |
+
+维度越高，表达能力越强，但计算量越大。实践中 512-4096 是最常用范围。
+
 ### 相关概念
 
 - [Tokenization](/notes/concepts/tokenization/) — 如何把文本切成 token
