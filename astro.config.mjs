@@ -70,6 +70,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'Transformer 教程', slug: 'tutorials/transformer' },
+                { label: '预训练模型', slug: 'tutorials/llm/pretrained-models' },
                 { label: '大模型原理', slug: 'tutorials/llm' },
               ],
             },
@@ -79,6 +80,7 @@ export default defineConfig({
               items: [
                 { label: 'Prompt Engineering', slug: 'tutorials/prompt-engineering' },
                 { label: 'RAG 与 Agent 开发', slug: 'tutorials/rag-agent' },
+                { label: '模型部署', slug: 'tutorials/rag-agent/deployment' },
               ],
             },
           ],

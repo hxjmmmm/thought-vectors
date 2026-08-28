@@ -1,0 +1,115 @@
+---
+title: 预训练模型
+description: BERT、GPT、扩散模型——从训练到使用
+---
+
+## 预训练模型
+
+预训练模型是先在**海量数据**上训练，再**微调**到具体任务的模型。它解决了"标注数据少"的问题。
+
+### 为什么需要预训练？
+
+训练一个 GPT-4 级别的模型需要数亿美元。但大多数人不需要从头训练——用别人预训练好的模型，在自己的数据上微调即可。
+
+### 两种预训练范式
+
+#### BERT 式：编码器预训练
+
+**Masked Language Model (MLM)**：随机遮住 15% 的词，让模型预测：
+
+```
+输入: The [MASK] sat on the mat
+预测: cat
+```
+
+```python
+from transformers import AutoModelForMaskedLM, AutoTokenizer
+
+model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+
+text = "The [MASK] is the capital of France."
+inputs = tokenizer(text, return_tensors="pt")
+outputs = model(**inputs)
+
+# 找到 [MASK] 位置的预测
+mask_idx = (inputs["input_ids"] == tokenizer.mask_token_id).nonzero()[0, 1]
+predicted_id = outputs.logits[0, mask_idx].argmax()
+print(f"预测: {tokenizer.decode(predicted_id)}")  # Paris
+```
+
+#### GPT 式：解码器预训练
+
+**Next Token Prediction**：给定前文，预测下一个词：
+
+```
+输入: The cat sat on the
+预测: mat
+```
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model = AutoModelForCausalLM.from_pretrained("gpt2")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+
+text = "The capital of France is"
+inputs = tokenizer(text, return_tensors="pt")
+outputs = model.generate(**inputs, max_new_tokens=5, do_sample=False)
+print(tokenizer.decode(outputs[0]))
+# The capital of France is Paris, the capital of
+```
+
+### 微调：适配你的任务
+
+```python
+from transformers import AutoModelForSequenceClassification, Trainer, TrainingArguments
+
+# 加载预训练模型，加分类头
+model = AutoModelForSequenceClassification.from_pretrained(
+    "bert-base-uncased", num_labels=3
+)
+
+training_args = TrainingArguments(
+    output_dir="./results",
+    num_train_epochs=3,
+    per_device_train_batch_size=8,
+    learning_rate=2e-5,
+)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+)
+trainer.train()
+```
+
+### 扩散模型：图像生成
+
+扩散模型通过**逐步去噪**生成图像：
+
+```python
+from diffusers import StableDiffusionPipeline
+
+pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5")
+pipe = pipe.to("cuda")
+
+image = pipe("A cat sitting on a mat, digital art").images[0]
+image.save("cat.png")
+```
+
+### 常见预训练模型
+
+| 模型 | 类型 | 参数量 | 用途 |
+|------|------|--------|------|
+| BERT | 编码器 | 110M / 340M | 分类、NER、问答 |
+| GPT-2 | 解码器 | 124M-1.5B | 文本生成 |
+| T5 | Encoder-Decoder | 60M-11B | 翻译、摘要 |
+| CLIP | 双编码器 | 400M | 图文匹配 |
+| Stable Diffusion | 扩散 | 860M | 图像生成 |
+
+### 相关页面
+
+- [Transformer 教程](/tutorials/transformer/) — 预训练模型的底层架构
+- [大模型原理](/tutorials/llm/) — 从预训练到对齐
