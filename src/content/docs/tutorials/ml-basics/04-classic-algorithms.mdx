@@ -5,30 +5,21 @@ description: 线性回归、逻辑回归、决策树——机器学习经典算�
 
 ## 经典机器学习算法
 
-### 线性回归
+机器学习算法虽然很多，但核心思想相通。这里覆盖最常用的四个算法。
 
-预测连续值。假设目标值 $y$ 是特征 $x$ 的线性组合：
-
-$$
-y = w_0 + w_1x_1 + w_2x_2 + ... + w_nx_n
-$$
-
-```python
-from sklearn.linear_model import LinearRegression
-from sklearn.datasets import make_regression
-
-X, y = make_regression(n_samples=200, n_features=3, noise=10)
-model = LinearRegression()
-model.fit(X, y)
-
-print(f"权重: {model.coef_}")
-print(f"偏置: {model.intercept_:.2f}")
-print(f"R²: {model.score(X, y):.3f}")
+```mermaid
+flowchart TD
+    A[机器学习算法] --> B[回归]
+    A --> C[分类]
+    B --> D[线性回归]
+    C --> E[逻辑回归]
+    C --> F[决策树]
+    C --> G[KNN]
 ```
 
 ### 逻辑回归
 
-分类问题，用 Sigmoid 将输出映射到 $[0, 1]$：
+名字叫"回归"但用于**分类**。用 Sigmoid 函数将输出映射到 $[0, 1]$，表示概率：
 
 $$
 P(y=1|x) = \frac{1}{1 + e^{-(wx+b)}}
@@ -38,32 +29,42 @@ $$
 from sklearn.linear_model import LogisticRegression
 from sklearn.datasets import make_classification
 
-X, y = make_classification(n_samples=200, n_features=4)
+X, y = make_classification(n_samples=200, n_features=4, random_state=42)
 model = LogisticRegression()
 model.fit(X, y)
 
 print(f"准确率: {model.score(X, y):.3f}")
-print(f"预测概率: {model.predict_proba(X[:3])}")
+# predict_proba 返回每个类别的概率
+print(f"前 3 个样本的预测概率:\n{model.predict_proba(X[:3])}")
 ```
 
 ### 决策树
 
-通过递归分裂数据，构建树形决策规则：
+通过递归分裂数据，构建树形决策规则。每个节点问一个问题，根据答案走向不同分支：
 
-```python
-from sklearn.tree import DecisionTreeClassifier
-from sklearn import tree
-
-model = DecisionTreeClassifier(max_depth=3)
-model.fit(X, y)
-
-# 可视化
-print(tree.export_text(model))
+```mermaid
+flowchart TD
+    A[年龄 > 30?] -->|是| B[收入 > 5万?]
+    A -->|否| C[学生?]
+    B -->|是| D[批准]
+    B -->|否| E[拒绝]
+    C -->|是| F[批准]
+    C -->|否| G[拒绝]
 ```
 
-### KNN：最近邻分类
+```python
+from sklearn.tree import DecisionTreeClassifier, export_text
 
-新样本的类别由最近的 K 个邻居投票决定：
+model = DecisionTreeClassifier(max_depth=3, random_state=42)
+model.fit(X, y)
+
+# 打印决策规则
+print(export_text(model))
+```
+
+### KNN：K 近邻
+
+最简单的分类算法——新样本的类别由最近的 K 个邻居投票决定：
 
 ```python
 from sklearn.neighbors import KNeighborsClassifier
@@ -73,7 +74,17 @@ model.fit(X, y)
 print(f"准确率: {model.score(X, y):.3f}")
 ```
 
-### 相关页面
+### 算法选择指南
 
-- [机器学习概念](/tutorials/ml-basics/03-ml-concepts/) — 前置知识
-- [线性回归详解](/tutorials/ml-basics/05-linear-regression/) — 深入理解线性回归
+| 场景 | 推荐算法 | 原因 |
+|------|---------|------|
+| 数据量大、特征多 | 逻辑回归 | 简单高效，可解释 |
+| 需要可解释的规则 | 决策树 | 可视化决策过程 |
+| 数据量小、无假设 | KNN | 不需要训练 |
+| 非线性关系 | 决策树 | 天然处理非线性 |
+| 需要概率输出 | 逻辑回归 | 输出是概率 |
+
+### 下一步
+
+- [线性回归与梯度下降](/tutorials/ml-basics/05-linear-regression/) — 深入理解回归
+- [特征工程](/tutorials/ml-basics/06-feature-engineering/) — 优化特征

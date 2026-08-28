@@ -5,51 +5,48 @@ description: 交叉验证、混淆矩阵、ROC 曲线——如何判断模型好
 
 ## 模型评估
 
-训练完模型后，如何判断它好不好？模型评估回答三个问题：准不准、稳不稳、会不会过拟合。
+模型训练完，真正的问题才开始：**它到底好不好？**
 
-### 训练集 / 验证集 / 测试集
+### 数据划分策略
+
+```mermaid
+flowchart LR
+    A[全部数据] --> B[训练集<br/>60%]
+    A --> C[验证集<br/>20%]
+    A --> D[测试集<br/>20%]
+    B -->|调参| E[模型]
+    C -->|评估| E
+    E -->|最终测试| D
+```
 
 ```python
 from sklearn.model_selection import train_test_split
 
-# 先分出测试集（20%），剩下的再分验证集
-X_temp, X_test, y_temp, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
-X_train, X_val, y_train, y_val = train_test_split(
-    X_temp, y_temp, test_size=0.25, random_state=42  # 0.25 × 0.8 = 0.2
-)
-
-print(f"训练集: {len(X_train)}, 验证集: {len(X_val)}, 测试集: {len(X_test)}")
-# 比例: 60% / 20% / 20%
+X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=0.2)
+X_train, X_val, y_train, y_val = train_test_split(X_temp, y_temp, test_size=0.25)
+print(f"训练:{len(X_train)} 验证:{len(X_val)} 测试:{len(X_test)}")
 ```
 
 ### 交叉验证
 
-数据量小时，K 折交叉验证比单次划分更可靠：
+数据量小时，K 折交叉验证更可靠：
 
 ```python
-from sklearn.model_selection import cross_val_score, KFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
 
-model = LogisticRegression()
-
-# 5 折交叉验证
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
-scores = cross_val_score(model, X, y, cv=kf, scoring='accuracy')
-
-print(f"每折准确率: {scores}")
+scores = cross_val_score(LogisticRegression(), X, y, cv=5)
+print(f"每折: {scores}")
 print(f"平均: {scores.mean():.3f} ± {scores.std():.3f}")
 ```
 
 ### 混淆矩阵
 
-分类问题的核心评估工具：
-
 ```
-                预测为正    预测为负
-实际为正        TP          FN
-实际为负        FP          TN
+                预测正    预测负
+实际正           TP        FN    ← 漏报（假阴性）
+实际负           FP        TN
+                 ↑
+              误报（假阳性）
 ```
 
 ```python
@@ -58,79 +55,43 @@ from sklearn.metrics import confusion_matrix, classification_report
 y_true = [1, 0, 1, 1, 0, 1, 0, 0, 1, 0]
 y_pred = [1, 0, 1, 0, 0, 1, 1, 0, 1, 0]
 
-cm = confusion_matrix(y_true, y_pred)
-print("混淆矩阵:")
-print(cm)
-
-print("\n分类报告:")
-print(classification_report(y_true, y_pred, target_names=["负类", "正类"]))
+print(confusion_matrix(y_true, y_pred))
+print(classification_report(y_true, y_pred))
 ```
 
-### 核心指标
+### 指标选择指南
 
-| 指标 | 公式 | 含义 |
+| 场景 | 指标 | 原因 |
 |------|------|------|
-| 准确率 | $\frac{TP+TN}{Total}$ | 整体正确率 |
-| 精确率 | $\frac{TP}{TP+FP}$ | 预测为正的里面有多少是真的 |
-| 召回率 | $\frac{TP}{TP+FN}$ | 真正的正类被找出了多少 |
-| F1 | $2\frac{P \cdot R}{P+R}$ | 精确率和召回率的调和平均 |
+| 均衡分类 | 准确率 | 简单直观 |
+| 垃圾邮件检测 | 精确率 | 不想误删正常邮件 |
+| 疾病筛查 | 召回率 | 不想漏诊 |
+| 不均衡数据 | F1 / AUC | 综合考虑 |
+| 回归任务 | R² / MSE | 衡量拟合程度 |
+
+### ROC 与 AUC
 
 ```python
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import roc_auc_score
 
-print(f"准确率: {accuracy_score(y_true, y_pred):.3f}")
-print(f"精确率: {precision_score(y_true, y_pred):.3f}")
-print(f"召回率: {recall_score(y_true, y_pred):.3f}")
-print(f"F1:      {f1_score(y_true, y_pred):.3f}")
-```
-
-### ROC 曲线与 AUC
-
-评估二分类模型在不同阈值下的表现：
-
-```python
-from sklearn.metrics import roc_curve, roc_auc_score
-
-# 获取预测概率（而非硬分类）
 y_score = model.predict_proba(X_test)[:, 1]
-
-fpr, tpr, thresholds = roc_curve(y_test, y_score)
 auc = roc_auc_score(y_test, y_score)
-
 print(f"AUC: {auc:.3f}")
-# AUC = 1.0: 完美分类器
-# AUC = 0.5: 随机猜测
-# AUC < 0.5: 比随机还差
+# 1.0 = 完美  0.5 = 随机  <0.5 = 比随机还差
 ```
 
-### 回归任务的评估指标
+### 回归评估
 
 ```python
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
 
 y_true = [3.0, -0.5, 2.0, 7.0]
 y_pred = [2.5, 0.0, 2.0, 8.0]
 
-mse = mean_squared_error(y_true, y_pred)
-mae = mean_absolute_error(y_true, y_pred)
-r2 = r2_score(y_true, y_pred)
-
-print(f"MSE:  {mse:.3f}")   # 越小越好
-print(f"MAE:  {mae:.3f}")   # 越小越好
-print(f"R²:   {r2:.3f}")    # 越接近 1 越好
+print(f"MSE: {mean_squared_error(y_true, y_pred):.3f}")
+print(f"R²:  {r2_score(y_true, y_pred):.3f}")
 ```
 
-### 何时用什么指标？
+### 下一步
 
-| 场景 | 推荐指标 |
-|------|----------|
-| 均衡分类 | 准确率 |
-| 减少误报（垃圾邮件） | 精确率 |
-| 减少漏报（疾病筛查） | 召回率 |
-| 不均衡数据 | F1、AUC |
-| 回归 | R²、MSE |
-
-### 相关页面
-
-- [特征工程](/tutorials/ml-basics/06-feature-engineering/) — 前置知识
-- [经典算法](/tutorials/ml-basics/04-classic-algorithms/) — 用这些指标评估算法
+- [深度学习入门](/tutorials/deep-learning/) — 进入神经网络
