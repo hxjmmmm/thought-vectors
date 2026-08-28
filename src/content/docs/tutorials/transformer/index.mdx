@@ -5,7 +5,7 @@ description: 理解现代大模型的核心架构——Transformer
 
 ## Transformer 教程
 
-Transformer 是现代大语言模型的基石。本教程分 5 章，从架构总览到完整实现。
+Transformer 是现代大语言模型的基石。从 ChatGPT 到 Claude 到 Llama，所有大模型的底层架构都源自 2017 年的这篇论文。本教程分 5 章，从架构总览到完整实现，学完后你将能**从零实现一个可训练的 Transformer**。
 
 ```mermaid
 flowchart LR
@@ -17,11 +17,12 @@ flowchart LR
 
 ### 你将学到
 
-- 注意力机制的数学原理和直观理解
-- Self-Attention 与 Cross-Attention 的区别
-- Multi-Head Attention 为什么需要多个头
-- 位置编码的三种实现方式
-- 从零实现一个可以训练的 Transformer
+- 为什么 Transformer 取代了 RNN/LSTM
+- Self-Attention 的完整数学推导和 PyTorch 实现
+- Multi-Head Attention 如何同时关注多种语义关系
+- 正弦编码、可学习编码、RoPE 三种位置编码
+- Encoder + Decoder 完整架构的代码实现
+- 训练一个真正的 Transformer 模型
 
 ### 核心公式
 
