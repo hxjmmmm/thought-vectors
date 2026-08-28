@@ -1,0 +1,92 @@
+---
+title: 优化器
+description: SGD、Adam、AdamW——理解不同优化器的工作原理
+---
+
+## 优化器
+
+优化器决定如何用梯度更新参数。不同的优化器收敛速度和效果差异巨大。
+
+### SGD：随机梯度下降
+
+最简单的优化器，每步沿负梯度方向移动：
+
+$$
+w_{t+1} = w_t - \alpha \nabla L(w_t)
+$$
+
+```python
+import torch
+import torch.nn as nn
+
+model = nn.Linear(10, 1)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+
+# 训练循环
+for epoch in range(100):
+    optimizer.zero_grad()
+    loss = nn.MSELoss()(model(x), y)
+    loss.backward()
+    optimizer.step()
+```
+
+### SGD + Momentum
+
+加入动量项，像球滚下山坡，累积速度：
+
+$$
+v_t = \beta v_{t-1} + (1-\beta)\nabla L(w_t)
+$$
+$$
+w_{t+1} = w_t - \alpha v_t
+$$
+
+```python
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+```
+
+### Adam：自适应学习率
+
+结合 Momentum 和 RMSprop，每个参数有独立的学习率：
+
+```python
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+```
+
+### AdamW：解耦权重衰减
+
+Adam 的改进版，将权重衰减和梯度更新分离，效果更好：
+
+```python
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
+```
+
+### 对比
+
+| 优化器 | 特点 | 适用场景 |
+|--------|------|----------|
+| SGD | 简单稳定，收敛慢 | 需要精细调参时 |
+| SGD+Momentum | 加速收敛，减少震荡 | 图像分类 |
+| Adam | 自适应学习率，收敛快 | 大多数场景 |
+| AdamW | Adam + 正确的权重衰减 | **Transformer 训练首选** |
+
+### 学习率调度
+
+```python
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
+scheduler = CosineAnnealingLR(optimizer, T_max=100)
+
+for epoch in range(100):
+    optimizer.zero_grad()
+    loss = loss_fn(model(x), y)
+    loss.backward()
+    optimizer.step()
+    scheduler.step()  # 每个 epoch 更新学习率
+```
+
+### 相关页面
+
+- [反向传播](/notes/concepts/backpropagation/) — 优化器依赖反向传播计算的梯度
+- [大模型原理](/tutorials/llm/) — 大模型训练中的优化器选择
