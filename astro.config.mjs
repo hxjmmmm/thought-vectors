@@ -42,34 +42,44 @@ export default defineConfig({
           collapsed: false,
           items: [
             {
-              label: '机器学习基础',
+              label: '🧱 第一阶段：打好基础',
               collapsed: true,
-              items: [{ autogenerate: { directory: 'tutorials/ml-basics' } }],
+              items: [
+                { label: 'Python 工具链', slug: 'tutorials/ml-basics' },
+                { label: '数学基础', slug: 'tutorials/ml-basics/02-math-basics' },
+                { label: '机器学习概念', slug: 'tutorials/ml-basics/03-ml-concepts' },
+              ],
             },
             {
-              label: '深度学习入门',
+              label: '⚙️ 第二阶段：机器学习入门',
+              collapsed: true,
+              items: [
+                { label: '经典算法', slug: 'tutorials/ml-basics/04-classic-algorithms' },
+                { label: '线性回归与梯度下降', slug: 'tutorials/ml-basics/05-linear-regression' },
+                { label: '特征工程', slug: 'tutorials/ml-basics/06-feature-engineering' },
+                { label: '模型评估', slug: 'tutorials/ml-basics/07-model-evaluation' },
+              ],
+            },
+            {
+              label: '🧠 第三阶段：深度学习',
               collapsed: true,
               items: [{ autogenerate: { directory: 'tutorials/deep-learning' } }],
             },
             {
-              label: 'Transformer 与注意力机制',
+              label: '🚀 第四阶段：现代大模型',
               collapsed: true,
-              items: [{ autogenerate: { directory: 'tutorials/transformer' } }],
+              items: [
+                { label: 'Transformer 教程', slug: 'tutorials/transformer' },
+                { label: '大模型原理', slug: 'tutorials/llm' },
+              ],
             },
             {
-              label: '大模型原理与实践',
+              label: '🛠 第五阶段：工程实践',
               collapsed: true,
-              items: [{ autogenerate: { directory: 'tutorials/llm' } }],
-            },
-            {
-              label: 'Prompt Engineering',
-              collapsed: true,
-              items: [{ autogenerate: { directory: 'tutorials/prompt-engineering' } }],
-            },
-            {
-              label: 'RAG 与 Agent 开发',
-              collapsed: true,
-              items: [{ autogenerate: { directory: 'tutorials/rag-agent' } }],
+              items: [
+                { label: 'Prompt Engineering', slug: 'tutorials/prompt-engineering' },
+                { label: 'RAG 与 Agent 开发', slug: 'tutorials/rag-agent' },
+              ],
             },
           ],
         },
