@@ -18,9 +18,9 @@ GPT-3 很强大，但经常**不遵循用户意图**——编造事实、输出�
 flowchart TD
     A[Step 1: SFT] --> B[Step 2: 训练 RM]
     B --> C[Step 3: PPO 优化]
-    A -->|收集人类演示数据<br/>微调 GPT-3| A1[监督微调模型]
-    B -->|标注员对回答排序<br/>训练奖励模型| B1[奖励模型 RM]
-    C -->|用 RM 打分<br/>PPO 优化策略| C1[InstructGPT]
+    A -->|13K 人类演示<br/>微调 GPT-3| A1[监督微调模型]
+    B -->|33K 偏好排序<br/>训练奖励模型| B1[奖励模型 RM]
+    C -->|RM 打分<br/>PPO 优化策略| C1[InstructGPT]
 ```
 
 ### Step 1：监督微调 (SFT)
@@ -35,19 +35,19 @@ Answer: "机器学习是让计算机从数据中学习规律..."
 
 ### Step 2：训练奖励模型 (RM)
 
-让标注员对多个回答**排序**，训练奖励模型预测人类偏好：
+让标注员对多个回答**排序**（而非打分），训练奖励模型：
 
 ```
 Prompt: "写一首关于 AI 的诗"
 
-回答 A: "芯片闪烁着智慧的光芒..."  ← 标注员排第 1
-回答 B: "AI is a technology..."      ← 标注员排第 2
-回答 C: "什么是AI？AI就是..."       ← 标注员排第 3
+回答 A: "芯片闪烁着智慧的光芒..."  ← 排第 1
+回答 B: "AI is a technology..."      ← 排第 2  
+回答 C: "什么是AI？AI就是..."       ← 排第 3
 ```
 
 ### Step 3：PPO 优化
 
-用奖励模型通过 PPO 算法优化策略，同时加入 KL 惩罚防止模型偏离太远：
+用奖励模型通过 PPO 优化策略，同时加 KL 惩罚防止偏离太远：
 
 $$
 \text{目标} = \mathbb{E}[R(x, y)] - \beta \cdot \text{KL}(\pi_{\theta} \| \pi_{\text{SFT}})
@@ -57,17 +57,17 @@ $$
 
 | 发现 | 数据 |
 |------|------|
-| 1.3B InstructGPT 胜过 175B GPT-3 | 标注员偏好率 85% vs 15% |
+| 1.3B InstructGPT 胜过 175B GPT-3 | 标注员偏好 85% vs 15% |
 | 幻觉显著减少 | TruthfulQA 准确率提升 2 倍 |
-| 有害输出大幅下降 | RealToxicityPrompts 毒性降低 25% |
+| 有害输出大幅下降 | 毒性降低 25% |
 
 ### 影响
 
-- 直接催生了 ChatGPT
-- RLHF 成为 Claude、Gemini 等产品的标准对齐方法
-- DPO (2023) 提出了更简单的替代方案
+- 直接催生了 ChatGPT（2022.11）
+- RLHF 成为 Claude、Gemini 的标准对齐方法
+- DPO (2023) 提出了无需奖励模型的更简单替代方案
 
 ### 相关页面
 
-- [RLHF 概念](/notes/concepts/) — 人类反馈强化学习
 - [大模型原理](/tutorials/llm/) — 训练三阶段详解
+- [RLHF](/notes/concepts/) — 人类反馈强化学习
