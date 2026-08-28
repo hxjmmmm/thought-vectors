@@ -3,9 +3,18 @@ title: RNN 与 LSTM
 description: 循环神经网络——处理序列数据的经典架构
 ---
 
-## RNN：循环神经网络
+## RNN 与 LSTM
 
-RNN 处理序列数据（文本、语音、时间序列），核心是一个**循环单元**，信息在时间步之间传递：
+RNN 处理序列数据，核心是**隐状态在时间步之间传递**。
+
+```mermaid
+flowchart LR
+    A[x₁] --> B[h₁] --> C[x₂] --> D[h₂] --> E[x₃] --> F[h₃]
+    B --> B
+    D --> D
+```
+
+### 简单 RNN
 
 $$
 h_t = \tanh(W_h h_{t-1} + W_x x_t + b)
@@ -15,49 +24,40 @@ $$
 import torch
 import torch.nn as nn
 
-# 简单 RNN
-rnn = nn.RNN(input_size=128, hidden_size=256, num_layers=1, batch_first=True)
-
-# 输入: (batch=2, seq_len=10, features=128)
-x = torch.randn(2, 10, 128)
+rnn = nn.RNN(input_size=128, hidden_size=256, batch_first=True)
+x = torch.randn(2, 10, 128)  # (batch=2, seq_len=10, features=128)
 output, hidden = rnn(x)
-print(f"输出: {output.shape}")   # (2, 10, 256)
-print(f"隐状态: {hidden.shape}") # (1, 2, 256)
+print(f"输出: {output.shape}, 隐状态: {hidden.shape}")
 ```
 
-### RNN 的问题
+### LSTM：解决长距离依赖
 
-长序列训练时，梯度在反向传播中反复相乘，导致：
+LSTM 通过**三个门**控制信息流动：
 
-- **梯度消失**：梯度趋近于 0，早期时间步无法学习
-- **梯度爆炸**：梯度趋近于无穷
+```mermaid
+flowchart LR
+    A[遗忘门] --> D[细胞状态]
+    B[输入门] --> D
+    C[输出门] --> E[隐状态]
+    D --> E
+```
 
-### LSTM：长短期记忆
-
-LSTM 通过**门控机制**解决长距离依赖问题：
+| 门 | 作用 |
+|----|------|
+| 遗忘门 | 决定丢弃哪些旧信息 |
+| 输入门 | 决定存储哪些新信息 |
+| 输出门 | 决定输出什么 |
 
 ```python
-lstm = nn.LSTM(input_size=128, hidden_size=256, num_layers=1, batch_first=True)
-
+lstm = nn.LSTM(input_size=128, hidden_size=256, batch_first=True)
 output, (hidden, cell) = lstm(x)
-print(f"输出: {output.shape}")   # (2, 10, 256)
-print(f"隐状态: {hidden.shape}") # (1, 2, 256)
-print(f"细胞状态: {cell.shape}") # (1, 2, 256)
+print(f"输出: {output.shape}, 隐状态: {hidden.shape}, 细胞状态: {cell.shape}")
 ```
 
-### LSTM 的三个门
+### RNN → Transformer
 
-| 门 | 公式 | 作用 |
-|----|------|------|
-| 遗忘门 | $f_t = \sigma(W_f \cdot [h_{t-1}, x_t])$ | 决定丢弃哪些旧信息 |
-| 输入门 | $i_t = \sigma(W_i \cdot [h_{t-1}, x_t])$ | 决定存储哪些新信息 |
-| 输出门 | $o_t = \sigma(W_o \cdot [h_{t-1}, x_t])$ | 决定输出哪些信息 |
+RNN 的局限是**串行计算**。Transformer 用 Self-Attention 替代循环，实现并行计算。
 
-### 从 RNN 到 Transformer
+### 下一步
 
-RNN/LSTM 的局限：串行计算，无法并行。Transformer 用 Self-Attention 彻底解决了这个问题。
-
-### 相关页面
-
-- [CNN](/tutorials/deep-learning/cnn/) — 图像处理架构
 - [Transformer 教程](/tutorials/transformer/) — 取代 RNN 的现代架构
