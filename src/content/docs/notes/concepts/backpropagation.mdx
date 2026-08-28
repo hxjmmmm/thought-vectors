@@ -84,6 +84,8 @@ print(f"自动求导: {w.grad.item()}, 手动计算: {expected_grad}")
 
 ### 梯度消失与爆炸
 
+深层网络中，梯度经过多层反向传播时反复相乘，导致：
+
 ```mermaid
 flowchart TD
     A[梯度 < 1] -->|反复相乘| B[梯度消失<br/>≈ 0]
@@ -95,12 +97,51 @@ flowchart TD
 | 梯度消失 | 深层网络梯度过小 | 浅层不更新 | ReLU、残差连接、LayerNorm |
 | 梯度爆炸 | 深层网络梯度过大 | 参数变为 NaN | 梯度裁剪、学习率调低 |
 
+### 逐步手动反向传播
+
+用一个简单例子演示完整的反向传播过程：
+
 ```python
-# 梯度裁剪
-torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+# 手动计算反向传播
+# 前向: a = w*x, b = a+bias, c = relu(b), loss = c²
+x = torch.tensor([2.0])
+w = torch.tensor([3.0], requires_grad=True)
+bias = torch.tensor([1.0], requires_grad=True)
+
+# 前向传播（记录每一步）
+a = w * x          # a = 6
+b = a + bias        # b = 7
+c = torch.relu(b)   # c = 7
+loss = c ** 2       # loss = 49
+
+# 反向传播：从 loss 往回推
+# ∂loss/∂c = 2c = 14
+# ∂c/∂b = 1 (ReLU 在 b>0 时导数为 1)
+# ∂loss/∂b = ∂loss/∂c * ∂c/∂b = 14 * 1 = 14
+# ∂b/∂bias = 1, ∂loss/∂bias = 14 * 1 = 14
+# ∂b/∂a = 1, ∂loss/∂a = 14 * 1 = 14
+# ∂a/∂w = x = 2, ∂loss/∂w = 14 * 2 = 28
+
+loss.backward()
+print(f"∂loss/∂w: {w.grad.item()} (手动: 28)")     # 28
+print(f"∂loss/∂bias: {bias.grad.item()} (手动: 14)")  # 14
+```
+
+### 为什么 PyTorch 需要 `.backward()` 而不是自动求导？
+
+PyTorch 采用**动态计算图**——每次前向传播时构建图，反向传播后释放。这样设计的好处是：支持动态控制流（if/while），每次迭代可以有不同的图结构，这是静态图框架（如 TensorFlow 1.x）做不到的。
+
+```python
+# 动态图的优势：每次迭代可以有不同的计算路径
+def dynamic_forward(x, threshold=0):
+    if x.sum() > threshold:
+        return x * 2
+    else:
+        return x * 3
+
+x = torch.randn(5, requires_grad=True)
+y = dynamic_forward(x)  # 图结构取决于运行时数据
+y.sum().backward()       # 自动计算梯度
 ```
 
 ### 相关页面
-
-- [激活函数](/notes/concepts/activation-functions/) — 激活函数的设计影响梯度流动
-- [深度学习入门](/tutorials/deep-learning/) — 反向传播在训练循环中的位置

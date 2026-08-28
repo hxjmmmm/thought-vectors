@@ -84,7 +84,29 @@ Post-LN（原始 Transformer）:  x → Attention → Add → LN → FFN → Add
 Pre-LN（现代做法）:          x → LN → Attention → Add → LN → FFN → Add
 ```
 
-Pre-LN 训练更稳定，是现代大模型的默认选择。
+Pre-LN 训练更稳定，是现代大模型的默认选择。原因：Pre-LN 让梯度直接流过残差路径，不受 LayerNorm 缩放影响。
+
+### RMSNorm：更高效的替代
+
+Llama 使用 RMSNorm 替代 LayerNorm，去掉了均值中心化，只做缩放：
+
+$$
+\text{RMSNorm}(x) = \frac{x}{\sqrt{\frac{1}{d}\sum x_i^2 + \epsilon}} \cdot \gamma
+$$
+
+```python
+class RMSNorm(nn.Module):
+    def __init__(self, dim, eps=1e-5):
+        super().__init__()
+        self.gamma = nn.Parameter(torch.ones(dim))
+        self.eps = eps
+
+    def forward(self, x):
+        rms = torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps)
+        return x / rms * self.gamma
+```
+
+比 LayerNorm 快约 10-15%，因为省去了均值计算。
 
 ### 相关页面
 
