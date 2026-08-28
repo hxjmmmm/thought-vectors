@@ -99,6 +99,7 @@ export default defineConfig({
                 { label: 'Transformer 教程', slug: 'tutorials/transformer' },
                 { label: '预训练模型', slug: 'tutorials/llm/pretrained-models' },
                 { label: '大模型原理', slug: 'tutorials/llm' },
+                { label: '微调实战', slug: 'tutorials/llm/fine-tuning' },
               ],
             },
             {
