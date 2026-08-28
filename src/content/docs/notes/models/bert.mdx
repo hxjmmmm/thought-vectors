@@ -1,20 +1,20 @@
 ---
 title: BERT
-description: 双向编码器——理解 NLP 的里程碑模型
+description: 双向编码器——NLP 的里程碑模型，开启预训练+微调时代
 ---
 
 ## BERT
 
-BERT（Bidirectional Encoder Representations from Transformers）是 Google 在 2018 年提出的预训练模型，**首次在 11 项 NLP 任务上刷新纪录**。
+BERT（Bidirectional Encoder Representations from Transformers）是 Google 2018 年提出的预训练模型，**首次在 11 项 NLP 任务上刷新纪录**。
 
 ### 与 GPT 的核心区别
 
 ```mermaid
 flowchart LR
-    subgraph GPT
+    subgraph GPT 单向
     A1[词1] --> A2[词2] --> A3[词3]
     end
-    subgraph BERT
+    subgraph BERT 双向
     B1[词1] <--> B2[词2] <--> B3[词3]
     end
 ```
@@ -25,15 +25,14 @@ flowchart LR
 | 预训练 | 预测下一个词 | 预测被遮住的词 |
 | 架构 | Decoder only | Encoder only |
 | 擅长 | 文本生成 | 文本理解 |
+| 参数量 | 117M-175B | 110M / 340M |
 
 ### 预训练：MLM
 
-Masked Language Model——随机遮住 15% 的词，让模型预测：
-
-```
-输入: The [MASK] sat on the [MASK]
-预测: cat, mat
-```
+Masked Language Model——随机遮住 15% 的词，让模型预测。被遮住的词中：
+- 80% 替换为 `[MASK]`
+- 10% 替换为随机词
+- 10% 保持不变
 
 ```python
 from transformers import AutoModelForMaskedLM, AutoTokenizer
@@ -56,35 +55,38 @@ print(f"预测: {tokenizer.decode(predicted)}")  # capital
 [CLS] 句子A [SEP] 句子B [SEP]
 ```
 
-- `[CLS]`：分类 token，其输出用于句子级任务
-- `[SEP]`：分隔符，区分两个句子
+- `[CLS]`：分类 token，其输出用于句子级分类
+- `[SEP]`：分隔符，同时标记句子边界
+- Token Embedding + Segment Embedding + Position Embedding
 
 ### 微调示例
 
 ```python
-from transformers import AutoModelForSequenceClassification, Trainer
+from transformers import AutoModelForSequenceClassification, Trainer, TrainingArguments
 
-# 加载预训练 BERT，加分类头
 model = AutoModelForSequenceClassification.from_pretrained(
     "bert-base-uncased", num_labels=2
 )
 
-# 微调
-trainer = Trainer(
-    model=model,
-    args=TrainingArguments(output_dir="./results", num_train_epochs=3),
-    train_dataset=train_dataset,
+training_args = TrainingArguments(
+    output_dir="./results",
+    num_train_epochs=3,
+    per_device_train_batch_size=16,
+    learning_rate=2e-5,
 )
+
+trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset)
 trainer.train()
 ```
 
-### BERT 的影响
+### BERT 的局限
 
-- 开启了 NLP 的"预训练 + 微调"时代
-- 衍生出 RoBERTa、ALBERT、DistilBERT 等变体
-- 虽然已被大模型取代，但其思想影响深远
+- 只能做理解，不能做生成
+- 输入长度固定 512 tokens
+- 被 GPT 系列在生成任务上全面超越
+- 但其"预训练+微调"范式影响深远
 
 ### 相关页面
 
 - [GPT 系列](/notes/models/gpt/) — 解码器路线的代表
-- [模型族谱](/notes/models/) — 全部模型对比
+- [Attention 论文](/notes/papers/attention-is-all-you-need/) — BERT 的底层架构

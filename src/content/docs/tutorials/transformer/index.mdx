@@ -3,27 +3,27 @@ title: Transformer 与注意力机制
 description: 理解现代大模型的核心架构——Transformer
 ---
 
-## Transformer 与注意力机制
+## Transformer 教程
 
-Transformer 是现代大语言模型的基石。本系列教程深入讲解 Transformer 的每一个组件。
+Transformer 是现代大语言模型的基石。本教程分 5 章，从架构总览到完整实现。
+
+```mermaid
+flowchart LR
+    A[1. 架构总览] --> B[2. Self-Attention]
+    B --> C[3. Multi-Head]
+    C --> D[4. 位置编码]
+    D --> E[5. 完整实现]
+```
 
 ### 你将学到
 
-- 注意力机制的直观理解
-- Self-Attention 的数学原理
-- Multi-Head Attention 的设计动机
-- 位置编码的多种实现
-- Encoder-Decoder 架构
-- 从零实现一个 Mini Transformer
-
-### 前置知识
-
-- 深度学习基础
-- 矩阵运算
+- 注意力机制的数学原理和直观理解
+- Self-Attention 与 Cross-Attention 的区别
+- Multi-Head Attention 为什么需要多个头
+- 位置编码的三种实现方式
+- 从零实现一个可以训练的 Transformer
 
 ### 核心公式
-
-自注意力机制的核心计算：
 
 $$
 \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
