@@ -1,40 +1,41 @@
 ---
 title: Llama 系列
-description: Meta 的开源大模型——从 Llama 1 到 Llama 4
+description: Meta 的开源大模型——推动开源 LLM 生态的关键力量
 ---
 
 ## Llama 系列
 
-Llama 是 Meta 的开源大模型系列，**推动了开源 LLM 生态的爆发**。
+Llama 是 Meta 的开源大模型系列，**单枪匹马推动了开源 LLM 生态的爆发**。
 
 ### 发展历程
 
 | 版本 | 时间 | 最大参数 | 关键创新 |
 |------|------|---------|---------|
-| Llama 1 | 2023.02 | 65B | 开源高效大模型 |
-| Llama 2 | 2023.07 | 70B | GQA、更长上下文 |
-| Llama 3 | 2024.04 | 70B | 训练数据大幅增加 |
-| Llama 3.1 | 2024.07 | 405B | 开源模型首次对标 GPT-4 |
-| Llama 4 | 2025 | - | 多模态、MoE |
+| Llama 1 | 2023.02 | 65B | 证明小模型+多数据 > 大模型 |
+| Llama 2 | 2023.07 | 70B | GQA、4K 上下文、商用许可 |
+| Llama 3 | 2024.04 | 70B | 15T tokens 训练、128K 词表 |
+| Llama 3.1 | 2024.07 | 405B | 开源首次对标 GPT-4 |
+| Llama 4 | 2025 | - | 多模态、MoE 架构 |
 
 ### 关键架构选择
 
 ```python
-# Llama 使用的关键技术
-# 1. RoPE 位置编码 — 可外推到更长序列
-# 2. GQA (Grouped Query Attention) — 节省 KV Cache 显存
-# 3. SwiGLU 激活函数 — 比 GELU 性能更好
-# 4. Pre-Norm — 训练更稳定
+# Llama 的核心架构特点
+# 1. Pre-Norm — 训练更稳定
+# 2. RoPE 位置编码 — 可外推到更长序列
+# 3. SwiGLU 激活 — 比 ReLU/GELU 性能更好
+# 4. GQA (Grouped Query Attention) — 节省 KV Cache
 ```
 
 ### 使用 Llama
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
 model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-3.2-3B-Instruct",
-    torch_dtype="auto",
+    torch_dtype=torch.bfloat16,
     device_map="auto",
 )
 tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B-Instruct")
@@ -44,17 +45,38 @@ messages = [
     {"role": "user", "content": "解释什么是 Transformer"},
 ]
 inputs = tokenizer.apply_chat_template(messages, return_tensors="pt").to("cuda")
-outputs = model.generate(inputs, max_new_tokens=200)
+outputs = model.generate(inputs, max_new_tokens=200, temperature=0.7)
 print(tokenizer.decode(outputs[0]))
 ```
 
-### 为什么 Llama 重要？
+### SwiGLU 激活函数
 
-1. **开源生态**：衍生出 Alpaca、Vicuna、Llama.cpp 等大量项目
-2. **本地部署**：通过量化可以在消费级 GPU 上运行
-3. **社区驱动**：全球开发者贡献优化和微调
+Llama 使用 SwiGLU 替代传统 FFN：
+
+$$
+\text{SwiGLU}(x) = (xW_1 \odot \text{SiLU}(xW_2))W_3
+$$
+
+其中 $\text{SiLU}(x) = x \cdot \sigma(x)$
+
+### GQA：分组查询注意力
+
+| 变体 | K、V 头数 | 显存 | 性能 |
+|------|----------|------|------|
+| MHA | 等于 Q 头数 | 最大 | 最好 |
+| GQA | 少于 Q 头数 | 中等 | 接近 MHA |
+| MQA | 1 | 最小 | 略有下降 |
+
+Llama 3 使用 8 个 KV 头配 32 个 Q 头，平衡了效率和性能。
+
+### 为什么 Llama 改变了生态？
+
+1. **开源**：任何人都能下载、微调、部署
+2. **商用许可**：Llama 2 起允许商用
+3. **衍生生态**：Alpaca、Vicuna、Llama-2-Chinese 等数千个微调版本
+4. **本地部署**：通过量化可在消费级 GPU 运行
 
 ### 相关页面
 
-- [GPT 系列](/notes/models/gpt/) — 闭源路线的代表
-- [模型量化](/notes/concepts/quantization/) — 让 Llama 在本地运行
+- [GPT 系列](/notes/models/gpt/) — 闭源路线代表
+- [模型量化](/notes/concepts/quantization/) — 让 Llama 本地运行
