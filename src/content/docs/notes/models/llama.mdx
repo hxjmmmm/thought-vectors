@@ -1,0 +1,60 @@
+---
+title: Llama 系列
+description: Meta 的开源大模型——从 Llama 1 到 Llama 4
+---
+
+## Llama 系列
+
+Llama 是 Meta 的开源大模型系列，**推动了开源 LLM 生态的爆发**。
+
+### 发展历程
+
+| 版本 | 时间 | 最大参数 | 关键创新 |
+|------|------|---------|---------|
+| Llama 1 | 2023.02 | 65B | 开源高效大模型 |
+| Llama 2 | 2023.07 | 70B | GQA、更长上下文 |
+| Llama 3 | 2024.04 | 70B | 训练数据大幅增加 |
+| Llama 3.1 | 2024.07 | 405B | 开源模型首次对标 GPT-4 |
+| Llama 4 | 2025 | - | 多模态、MoE |
+
+### 关键架构选择
+
+```python
+# Llama 使用的关键技术
+# 1. RoPE 位置编码 — 可外推到更长序列
+# 2. GQA (Grouped Query Attention) — 节省 KV Cache 显存
+# 3. SwiGLU 激活函数 — 比 GELU 性能更好
+# 4. Pre-Norm — 训练更稳定
+```
+
+### 使用 Llama
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model = AutoModelForCausalLM.from_pretrained(
+    "meta-llama/Llama-3.2-3B-Instruct",
+    torch_dtype="auto",
+    device_map="auto",
+)
+tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B-Instruct")
+
+messages = [
+    {"role": "system", "content": "你是一个 AI 助手。"},
+    {"role": "user", "content": "解释什么是 Transformer"},
+]
+inputs = tokenizer.apply_chat_template(messages, return_tensors="pt").to("cuda")
+outputs = model.generate(inputs, max_new_tokens=200)
+print(tokenizer.decode(outputs[0]))
+```
+
+### 为什么 Llama 重要？
+
+1. **开源生态**：衍生出 Alpaca、Vicuna、Llama.cpp 等大量项目
+2. **本地部署**：通过量化可以在消费级 GPU 上运行
+3. **社区驱动**：全球开发者贡献优化和微调
+
+### 相关页面
+
+- [GPT 系列](/notes/models/gpt/) — 闭源路线的代表
+- [模型量化](/notes/concepts/quantization/) — 让 Llama 在本地运行
