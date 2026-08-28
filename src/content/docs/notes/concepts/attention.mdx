@@ -100,6 +100,7 @@ print(f"注意力权重形状: {weights.shape}")  # (2, 10, 10)
 
 - **为什么除以 $\sqrt{d_k}$？** 当 $d_k$ 很大时，点积结果方差变大，Softmax 会趋向于 one-hot（梯度消失）。除以 $\sqrt{d_k}$ 将方差控制在 1 附近。
 - **Mask 的作用**：Decoder 中不能看到未来的词，用 mask 将未来位置设为 $-\infty$，Softmax 后概率为 0。
+- **计算复杂度**：$O(n^2 \cdot d)$，其中 $n$ 是序列长度，$d$ 是维度。这就是长序列成本高的原因，Flash Attention 通过 IO 优化大幅降低了实际开销。
 
 ### 相关概念
 
