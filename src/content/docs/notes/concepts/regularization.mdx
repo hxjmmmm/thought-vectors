@@ -1,55 +1,93 @@
 ---
 title: 正则化
-description: Dropout、Weight Decay、数据增强——防止过拟合的三大武器
+description: Dropout、Weight Decay、数据增强——防止过拟合的完整武器库
 ---
 
 ## 正则化
 
-正则化是防止过拟合的技术。核心思想：**限制模型复杂度，让它学到真正的规律而非噪声**。
+正则化防止模型**死记硬背训练数据**（过拟合），让它学到真正的规律。
 
-### Dropout
+### Dropout：随机丢弃
 
-训练时随机丢弃一部分神经元，迫使网络不过度依赖任何单个特征：
+训练时随机丢弃 $p$ 比例的神经元，强迫网络不依赖任何单个特征：
 
 ```python
 import torch.nn as nn
 
-# Dropout 层：训练时随机将 20% 的神经元输出置零
 dropout = nn.Dropout(p=0.2)
 
 x = torch.randn(3, 10)
-output = dropout(x)  # 训练时一些值变为 0
+output = dropout(x)  # 训练时约 20% 的值变为 0
 print(f"非零比例: {(output != 0).sum().item() / output.numel():.1%}")
 ```
 
+**原理**：每次训练迭代，Dropout 创建了一个不同的"子网络"。推理时相当于多个子网络的集成。
+
 | p 值 | 场景 |
 |------|------|
-| 0.1 | 输入层（轻微正则化） |
-| 0.2 | 隐藏层（常用值） |
-| 0.5 | 大模型过拟合严重时 |
+| 0.1 | 输入层，轻微正则化 |
+| 0.2-0.3 | 隐藏层，常用值 |
+| 0.5 | 过拟合严重时 |
 
-### Weight Decay
+### Weight Decay：惩罚大权重
 
-在损失函数中加入权重的 L2 范数，惩罚过大的权重：
+在损失中加入权重的 L2 范数，鼓励权重保持较小值：
 
 $$
 L_{\text{total}} = L_{\text{original}} + \lambda \sum w^2
 $$
 
 ```python
-# AdamW 内置 weight decay，与梯度更新解耦
+# AdamW 的 weight_decay 是真正的 L2 正则化
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
 ```
 
-### 正则化方法对比
+### 数据增强：扩充训练数据
 
-| 方法 | 原理 | 实现 |
-|------|------|------|
-| Dropout | 随机丢弃神经元 | `nn.Dropout(p)` |
-| Weight Decay | 惩罚大权重 | `AdamW(weight_decay=...)` |
-| 数据增强 | 扩充训练数据 | 旋转、裁剪、加噪 |
-| Early Stopping | 验证集不再提升时停止 | 监控 val_loss |
-| Label Smoothing | 标签不要 100% 确定 | 0.1 平滑 |
+```python
+from torchvision import transforms
+
+# 图像增强
+augment = transforms.Compose([
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomRotation(15),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2),
+    transforms.RandomCrop(32, padding=4),
+])
+```
+
+### Early Stopping
+
+验证集损失不再下降时停止训练，防止过拟合：
+
+```python
+best_loss = float('inf')
+patience = 5
+patience_counter = 0
+
+for epoch in range(epochs):
+    train_loss = train_one_epoch()
+    val_loss = validate()
+
+    if val_loss < best_loss:
+        best_loss = val_loss
+        torch.save(model.state_dict(), 'best_model.pt')
+        patience_counter = 0
+    else:
+        patience_counter += 1
+        if patience_counter >= patience:
+            print(f"Early stopping at epoch {epoch}")
+            break
+```
+
+### Label Smoothing
+
+标签不要 100% 确定，给错误类别留一点概率：
+
+```python
+# 原始: [1, 0, 0] → 平滑后: [0.933, 0.033, 0.033]
+criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+```
 
 ### 完整的正则化示例
 
@@ -59,7 +97,7 @@ class RegularizedMLP(nn.Module):
         super().__init__()
         self.model = nn.Sequential(
             nn.Linear(784, 256),
-            nn.BatchNorm1d(256),     # 归一化（也是一种正则化）
+            nn.BatchNorm1d(256),     # 归一化也是正则化
             nn.ReLU(),
             nn.Dropout(0.3),         # Dropout
             nn.Linear(256, 128),
@@ -71,10 +109,9 @@ class RegularizedMLP(nn.Module):
 
     def forward(self, x):
         return self.model(x)
-
-# 训练时：model.train() → Dropout 生效
-# 推理时：model.eval() → Dropout 自动关闭
 ```
+
+> 💡 训练时 `model.train()` → Dropout 和 BatchNorm 生效；推理时 `model.eval()` → 自动关闭。
 
 ### 相关页面
 

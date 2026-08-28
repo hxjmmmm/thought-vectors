@@ -1,28 +1,16 @@
 ---
 title: 经典算法
-description: 线性回归、逻辑回归、决策树——机器学习经典算法详解
+description: 逻辑回归、决策树、KNN——三大经典机器学习算法详解
 ---
 
 ## 经典机器学习算法
 
-机器学习算法虽然很多，但核心思想相通。这里覆盖最常用的四个算法。
+### 逻辑回归：名字叫回归，实际做分类
 
-```mermaid
-flowchart TD
-    A[机器学习算法] --> B[回归]
-    A --> C[分类]
-    B --> D[线性回归]
-    C --> E[逻辑回归]
-    C --> F[决策树]
-    C --> G[KNN]
-```
-
-### 逻辑回归
-
-名字叫"回归"但用于**分类**。用 Sigmoid 函数将输出映射到 $[0, 1]$，表示概率：
+用 Sigmoid 将线性输出映射为概率：
 
 $$
-P(y=1|x) = \frac{1}{1 + e^{-(wx+b)}}
+P(y=1|x) = \frac{1}{1 + e^{-(w^Tx + b)}}
 $$
 
 ```python
@@ -35,21 +23,24 @@ model.fit(X, y)
 
 print(f"准确率: {model.score(X, y):.3f}")
 # predict_proba 返回每个类别的概率
-print(f"前 3 个样本的预测概率:\n{model.predict_proba(X[:3])}")
+probs = model.predict_proba(X[:3])
+print(f"前 3 个样本的概率:\n{probs}")
 ```
 
-### 决策树
+**决策边界**：逻辑回归学习的是线性决策边界。对于非线性问题，需要使用多项式特征或核方法。
 
-通过递归分裂数据，构建树形决策规则。每个节点问一个问题，根据答案走向不同分支：
+### 决策树：可解释的规则
+
+通过递归分裂数据，每次选择最优特征和阈值，构建树形决策规则：
 
 ```mermaid
 flowchart TD
     A[年龄 > 30?] -->|是| B[收入 > 5万?]
     A -->|否| C[学生?]
-    B -->|是| D[批准]
-    B -->|否| E[拒绝]
-    C -->|是| F[批准]
-    C -->|否| G[拒绝]
+    B -->|是| D[批准 ✅]
+    B -->|否| E[拒绝 ❌]
+    C -->|是| F[批准 ✅]
+    C -->|否| G[拒绝 ❌]
 ```
 
 ```python
@@ -59,12 +50,17 @@ model = DecisionTreeClassifier(max_depth=3, random_state=42)
 model.fit(X, y)
 
 # 打印决策规则
-print(export_text(model))
+print(export_text(model, feature_names=[f"特征{i}" for i in range(4)]))
 ```
 
-### KNN：K 近邻
+**关键参数**：
+- `max_depth`：最大深度，防止过拟合
+- `min_samples_split`：节点最少样本数才分裂
+- `criterion`：`gini`（基尼系数）或 `entropy`（信息增益）
 
-最简单的分类算法——新样本的类别由最近的 K 个邻居投票决定：
+### KNN：最懒的算法
+
+KNN 不做任何训练，预测时找最近的 K 个邻居投票：
 
 ```python
 from sklearn.neighbors import KNeighborsClassifier
@@ -74,17 +70,20 @@ model.fit(X, y)
 print(f"准确率: {model.score(X, y):.3f}")
 ```
 
-### 算法选择指南
+**K 值选择**：
+- K 太小 → 对噪声敏感，过拟合
+- K 太大 → 决策边界过于平滑，欠拟合
+- 常用 $K = \sqrt{n}$ 或交叉验证选择
 
-| 场景 | 推荐算法 | 原因 |
-|------|---------|------|
-| 数据量大、特征多 | 逻辑回归 | 简单高效，可解释 |
-| 需要可解释的规则 | 决策树 | 可视化决策过程 |
-| 数据量小、无假设 | KNN | 不需要训练 |
-| 非线性关系 | 决策树 | 天然处理非线性 |
-| 需要概率输出 | 逻辑回归 | 输出是概率 |
+### 三算法对比
 
-### 下一步
+| 算法 | 优点 | 缺点 | 适用场景 |
+|------|------|------|---------|
+| 逻辑回归 | 可解释、训练快 | 只能线性分类 | 基线模型、文本分类 |
+| 决策树 | 可解释、无需缩放 | 容易过拟合 | 需要解释的场景 |
+| KNN | 无需训练、简单 | 推理慢、内存大 | 小数据集、推荐系统 |
 
-- [线性回归与梯度下降](/tutorials/ml-basics/05-linear-regression/) — 深入理解回归
-- [特征工程](/tutorials/ml-basics/06-feature-engineering/) — 优化特征
+### 相关页面
+
+- [线性回归](/tutorials/ml-basics/05-linear-regression/) — 回归问题
+- [模型评估](/tutorials/ml-basics/07-model-evaluation/) — 如何评价这些算法
