@@ -8,11 +8,15 @@ description: 理解 Transformer 的整体架构设计——为什么它彻底改
 在 Transformer 出现之前，处理序列数据（文本、语音）的主流方案是 RNN/LSTM。它们的问题很明显：
 
 1. **串行计算，无法并行**：第 3 个词的输出依赖第 2 个词的计算结果，第 2 个又依赖第 1 个。GPU 的强大并行能力被浪费了。
-2. **长距离依赖弱**：句子长了，前面的信息传到后面就"衰减"了。LSTM 试图解决这个问题，但效果有限。
+2. **长距离依赖弱**：句子长了，前面的信息传到后面就"衰减"了。
 
-2017 年，Google 的论文 [Attention Is All You Need](https://arxiv.org/abs/1706.03762) 提出了 Transformer，**完全抛弃了循环结构，只用注意力机制**。这个设计让模型可以并行计算，同时任意两个位置的词都能直接"看到"彼此。
+2017 年，Google 的论文 [Attention Is All You Need](https://arxiv.org/abs/1706.03762) 提出了 Transformer，**完全抛弃了循环结构，只用注意力机制**。
 
-> 💡 这篇论文是目前整个大模型时代的起点。ChatGPT、Claude、Gemini 的底层架构全部源自这里。
+```mermaid
+flowchart LR
+    RNN[RNN/LSTM] -->|串行计算| RNN_BAD[❌ 无法并行<br/>❌ 长距离依赖弱]
+    Transformer -->|注意力机制| TRANS_GOOD[✅ 完全并行<br/>✅ O(1) 路径长度]
+```
 
 ## 整体架构
 

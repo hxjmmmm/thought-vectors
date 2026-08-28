@@ -5,7 +5,20 @@ description: 理解 Attention 的数学原理与代码实现
 
 ## 注意力机制
 
-注意力机制是 Transformer 的核心，让模型在处理每个词时能"看到"整个序列。
+注意力机制让模型在处理每个词时能"看到"整个序列。
+
+```mermaid
+flowchart LR
+    A[输入序列] --> B[Q 投影]
+    A --> C[K 投影]
+    A --> D[V 投影]
+    B --> E[QK^T / √d_k]
+    C --> E
+    E --> F[Softmax]
+    F --> G[× V]
+    D --> G
+    G --> H[输出]
+```
 
 ### 直观理解
 
