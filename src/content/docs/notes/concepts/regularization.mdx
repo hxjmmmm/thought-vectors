@@ -1,0 +1,82 @@
+---
+title: 正则化
+description: Dropout、Weight Decay、数据增强——防止过拟合的三大武器
+---
+
+## 正则化
+
+正则化是防止过拟合的技术。核心思想：**限制模型复杂度，让它学到真正的规律而非噪声**。
+
+### Dropout
+
+训练时随机丢弃一部分神经元，迫使网络不过度依赖任何单个特征：
+
+```python
+import torch.nn as nn
+
+# Dropout 层：训练时随机将 20% 的神经元输出置零
+dropout = nn.Dropout(p=0.2)
+
+x = torch.randn(3, 10)
+output = dropout(x)  # 训练时一些值变为 0
+print(f"非零比例: {(output != 0).sum().item() / output.numel():.1%}")
+```
+
+| p 值 | 场景 |
+|------|------|
+| 0.1 | 输入层（轻微正则化） |
+| 0.2 | 隐藏层（常用值） |
+| 0.5 | 大模型过拟合严重时 |
+
+### Weight Decay
+
+在损失函数中加入权重的 L2 范数，惩罚过大的权重：
+
+$$
+L_{\text{total}} = L_{\text{original}} + \lambda \sum w^2
+$$
+
+```python
+# AdamW 内置 weight decay，与梯度更新解耦
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
+```
+
+### 正则化方法对比
+
+| 方法 | 原理 | 实现 |
+|------|------|------|
+| Dropout | 随机丢弃神经元 | `nn.Dropout(p)` |
+| Weight Decay | 惩罚大权重 | `AdamW(weight_decay=...)` |
+| 数据增强 | 扩充训练数据 | 旋转、裁剪、加噪 |
+| Early Stopping | 验证集不再提升时停止 | 监控 val_loss |
+| Label Smoothing | 标签不要 100% 确定 | 0.1 平滑 |
+
+### 完整的正则化示例
+
+```python
+class RegularizedMLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = nn.Sequential(
+            nn.Linear(784, 256),
+            nn.BatchNorm1d(256),     # 归一化（也是一种正则化）
+            nn.ReLU(),
+            nn.Dropout(0.3),         # Dropout
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(128, 10),
+        )
+
+    def forward(self, x):
+        return self.model(x)
+
+# 训练时：model.train() → Dropout 生效
+# 推理时：model.eval() → Dropout 自动关闭
+```
+
+### 相关页面
+
+- [机器学习概念](/tutorials/ml-basics/03-ml-concepts/) — 过拟合的本质
+- [优化器](/notes/concepts/optimizers/) — AdamW 的 weight decay
