@@ -97,14 +97,38 @@ print(f"dy/dx at x=2: {x.grad.item()}")  # 3×4 + 2 = 14
 ```python
 def train_one_epoch(model, dataloader, optimizer, loss_fn):
     model.train()
+    total_loss = 0
     for x_batch, y_batch in dataloader:
-        optimizer.zero_grad()
-        loss = loss_fn(model(x_batch), y_batch)
-        loss.backward()
-        optimizer.step()
+        optimizer.zero_grad()          # 清零梯度
+        y_pred = model(x_batch)        # 前向传播
+        loss = loss_fn(y_pred, y_batch) # 计算损失
+        loss.backward()                # 反向传播
+        optimizer.step()               # 更新参数
+        total_loss += loss.item()
+    return total_loss / len(dataloader)
+```
+
+### 训练技巧
+
+| 技巧 | 作用 | 实现 |
+|------|------|------|
+| 学习率调度 | 逐步降低学习率 | CosineAnnealingLR |
+| 梯度裁剪 | 防止梯度爆炸 | `clip_grad_norm_` |
+| Early Stopping | 防止过拟合 | 监控验证损失 |
+| 混合精度 | 加速训练 | `torch.cuda.amp` |
+
+```python
+# 混合精度训练示例
+scaler = torch.cuda.amp.GradScaler()
+with torch.cuda.amp.autocast():
+    loss = loss_fn(model(x), y)
+scaler.scale(loss).backward()
+scaler.step(optimizer)
+scaler.update()
 ```
 
 ### 下一步
 
 - [CNN](/tutorials/deep-learning/cnn/) — 图像处理的利器
 - [RNN](/tutorials/deep-learning/rnn/) — 序列模型
+- [Transformer](/tutorials/transformer/) — 现代架构
