@@ -5,29 +5,43 @@ description: INT8、INT4、GPTQ、AWQ——把模型压缩 4 倍的技术
 
 ## 模型量化
 
-量化是把模型参数从高精度（FP16/BF16）压缩到低精度（INT8/INT4）的技术。**显存减半，速度翻倍，精度几乎不降。**
+量化是把模型参数从高精度（FP16/BF16）压缩到低精度（INT8/INT4）。**显存减半以上，速度翻倍，精度几乎不降。**
 
 ### 为什么需要量化？
 
-Llama-7B 的参数：
-- FP16：7B × 2 字节 = **14 GB 显存**
-- INT4：7B × 0.5 字节 = **3.5 GB 显存**
-
-一张 RTX 3060 (12GB) 就能跑 7B 模型。
+Llama-7B 的参数占用：
+- FP16：7B × 2 字节 = **14 GB 显存**（需要 A100）
+- INT4：7B × 0.5 字节 = **3.5 GB 显存**（RTX 3060 就能跑）
 
 ### 基本原理
-
-```mermaid
-flowchart LR
-    A[FP16 权重<br/>2 字节/参数] -->|量化| B[INT4 权重<br/>0.5 字节/参数]
-    B -->|推理时反量化| C[FP16 计算]
-```
-
-量化公式：
 
 $$
 q = \text{round}\left(\frac{x - \text{offset}}{\text{scale}}\right)
 $$
+
+将连续的浮点值映射到离散的整数范围，存储时用整数，计算时反量化回浮点：
+
+```mermaid
+flowchart LR
+    A[FP16 权重] -->|量化| B[INT4 存储]
+    B -->|反量化| C[FP16 计算]
+```
+
+### 量化误差模拟
+
+```python
+import torch
+
+x = torch.randn(1000) * 3  # 原始 FP16 数据
+
+# 模拟 INT4 量化（16 个值）
+scale = (x.max() - x.min()) / 15
+x_quant = torch.round(x / scale) * scale
+
+error = (x - x_quant).abs().mean()
+print(f"平均量化误差: {error:.4f}")
+print(f"相对误差: {error / x.abs().mean() * 100:.1f}%")
+```
 
 ### 使用 bitsandbytes 量化
 
@@ -53,37 +67,21 @@ print(f"显存: {model.get_memory_footprint() / 1e9:.1f} GB")
 
 ### 量化方法对比
 
-| 方法 | 精度 | 速度 | 特点 |
-|------|------|------|------|
-| GPTQ | INT4/INT8 | 快 | 需要校准数据，一次性量化 |
-| AWQ | INT4 | 快 | 保护重要权重通道 |
-| bitsandbytes | INT4/INT8 | 中 | 动态量化，即插即用 |
-| GGUF | INT4-INT8 | 中 | llama.cpp 格式，CPU 友好 |
-
-### 量化对精度的影响
-
-```python
-# 模拟量化误差
-import torch
-
-x = torch.randn(1000) * 3  # 原始数据
-
-# 模拟 INT4 量化（16 个值）
-scale = (x.max() - x.min()) / 15
-x_quant = torch.round(x / scale) * scale
-
-error = (x - x_quant).abs().mean()
-print(f"平均量化误差: {error:.4f}")
-print(f"相对误差: {error / x.abs().mean() * 100:.1f}%")
-```
+| 方法 | 精度 | 速度 | 特点 | 适用 |
+|------|------|------|------|------|
+| GPTQ | INT4/INT8 | 快 | 需校准数据，一次性量化 | 生产部署 |
+| AWQ | INT4 | 快 | 保护重要权重通道 | 生产部署 |
+| bitsandbytes | INT4/INT8 | 中 | 动态量化，即插即用 | 本地实验 |
+| GGUF | INT4-INT8 | 中 | llama.cpp 格式，CPU 友好 | 边缘设备 |
 
 ### 选择指南
 
 - 本地跑大模型：**bitsandbytes 4-bit**（最简单）
-- 部署到生产：**GPTQ** 或 **AWQ**（更快）
-- 边缘设备/CPU：**GGUF**（llama.cpp）
+- 部署到服务器：**GPTQ** 或 **AWQ**（更快）
+- 手机/边缘设备：**GGUF**（llama.cpp）
+- 训练时节省显存：**QLoRA**（量化 + LoRA）
 
 ### 相关页面
 
-- [KV Cache](/notes/concepts/kv-cache/) — 量化和 KV Cache 是显存优化的两大支柱
+- [KV Cache](/notes/concepts/kv-cache/) — 量化和 KV Cache 是显存优化两大支柱
 - [模型部署](/tutorials/rag-agent/deployment/) — 部署中的量化实践

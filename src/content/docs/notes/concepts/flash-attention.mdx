@@ -1,45 +1,44 @@
 ---
 title: Flash Attention
-description: 让注意力计算快 10 倍——IO 感知的精确注意力算法
+description: 让注意力计算快 2-4 倍——IO 感知的精确注意力算法
 ---
 
 ## Flash Attention
 
-Flash Attention 是让大模型推理和训练加速的关键技术，**在不牺牲精度的情况下，将注意力计算加速 2-4 倍，显存降低 5-20 倍**。
+Flash Attention 是大模型推理和训练加速的关键技术。**不牺牲精度，注意力计算加速 2-4 倍，显存降低 5-20 倍**。
 
 ### 为什么标准 Attention 慢？
 
-标准 Attention 的计算瓶颈不是计算本身，而是 **GPU 显存读写**：
+标准 Attention 的计算瓶颈不是 GPU 算力，而是**显存带宽**。每次计算都要读写巨型矩阵到 HBM（高带宽显存）：
 
 ```mermaid
 flowchart LR
-    A[GPU 计算单元<br/>很快] --> B[显存 HBM<br/>很慢]
-    B --> A
+    A[GPU 计算单元<br/>超快] -->|读写| B[HBM 显存<br/>慢 10 倍]
+    B -->|读写| A
 ```
 
-标准 Attention 需要反复读写大型矩阵（QK^T 和 Softmax 结果），大量时间浪费在数据传输上。
+标准 Attention 需要存储 $QK^T$ 矩阵（$n \times n$），对于 2048 长度的序列就是 16MB，还要反复读写。
 
 ### 核心思想：分块计算
 
-Flash Attention 将 Q、K、V 分成小块，在 GPU 的 SRAM（快缓存）中完成计算，避免频繁读写 HBM：
+Flash Attention 将 Q、K、V 分成小块，在 GPU 的 SRAM（片上缓存，比 HBM 快 10 倍）中完成计算，避免频繁读写 HBM：
 
 ```mermaid
 flowchart TD
     subgraph 标准 Attention
-    A1[QK^T → HBM] --> A2[Softmax → HBM] --> A3[×V → HBM]
+    A1["QK^T → 写 HBM"] --> A2["Softmax → 写 HBM"] --> A3["×V → 写 HBM"]
     end
     subgraph Flash Attention
-    B1[分块加载到 SRAM] --> B2[块内计算] --> B3[增量更新输出]
+    B1[分块加载到 SRAM] --> B2[块内计算 Attention] --> B3[增量更新输出]
     end
 ```
 
 ### 使用方式
 
 ```python
-# PyTorch 2.0+ 内置支持
 import torch
 
-# 自动使用 Flash Attention（如果可用）
+# PyTorch 2.0+ 内置支持，自动使用 Flash Attention
 with torch.backends.cuda.sdp_kernel(
     enable_flash=True,
     enable_math=False,
@@ -49,36 +48,37 @@ with torch.backends.cuda.sdp_kernel(
         query, key, value, attn_mask=mask
     )
 
-# 检查是否支持
+# 检查是否可用
 print(f"Flash Attention 可用: {torch.cuda.is_flash_attention_available()}")
 ```
 
-### 在 HuggingFace 中使用
+### HuggingFace 中使用
 
 ```python
 from transformers import AutoModelForCausalLM
+import torch
 
-# 自动使用 Flash Attention 2
 model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-3.2-3B",
     torch_dtype=torch.bfloat16,
-    attn_implementation="flash_attention_2",
+    attn_implementation="flash_attention_2",  # 关键
 )
 ```
 
 ### 性能对比
 
-| 方法 | 速度 | 显存 | 精度 |
-|------|------|------|------|
-| 标准 Attention | 1x | $O(n^2)$ | 精确 |
-| Flash Attention | 2-4x | $O(n)$ | 精确 |
-| Flash Attention 2 | 3-5x | $O(n)$ | 精确 |
+| 方法 | 速度 | 显存 | 精度 | 支持 |
+|------|------|------|------|------|
+| 标准 Attention | 1x | $O(n^2)$ | 精确 | 所有 GPU |
+| Flash Attention 1 | 2-3x | $O(n)$ | 精确 | Ampere+ |
+| Flash Attention 2 | 3-5x | $O(n)$ | 精确 | Ampere+ |
+| Flash Attention 3 | 5-7x | $O(n)$ | 精确 | Hopper |
 
 ### 关键论文
 
-- Flash Attention (2022)：首次提出 IO 感知的注意力算法
-- Flash Attention 2 (2023)：进一步优化，达到理论峰值的 73%
-- Flash Attention 3 (2024)：支持 Hopper 架构新特性
+- **Flash Attention (2022)**：首次提出 IO 感知的分块注意力算法
+- **Flash Attention 2 (2023)**：优化并行策略，达到理论峰值的 73%
+- **Flash Attention 3 (2024)**：利用 Hopper 架构的异步执行和 FP8
 
 ### 相关页面
 

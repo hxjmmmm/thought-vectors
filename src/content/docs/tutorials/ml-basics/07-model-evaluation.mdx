@@ -1,22 +1,19 @@
 ---
 title: 模型评估
-description: 交叉验证、混淆矩阵、ROC 曲线——如何判断模型好坏
+description: 交叉验证、混淆矩阵、ROC 曲线——如何科学判断模型好坏
 ---
 
 ## 模型评估
 
-模型训练完，真正的问题才开始：**它到底好不好？**
+模型训练完，**它到底好不好？** 模型评估用数据回答这个问题。
 
-### 数据划分策略
+### 数据划分
 
 ```mermaid
 flowchart LR
-    A[全部数据] --> B[训练集<br/>60%]
-    A --> C[验证集<br/>20%]
-    A --> D[测试集<br/>20%]
-    B -->|调参| E[模型]
-    C -->|评估| E
-    E -->|最终测试| D
+    A[全部数据] --> B[训练集 60%<br/>学习参数]
+    A --> C[验证集 20%<br/>调超参]
+    A --> D[测试集 20%<br/>最终评估]
 ```
 
 ```python
@@ -43,10 +40,8 @@ print(f"平均: {scores.mean():.3f} ± {scores.std():.3f}")
 
 ```
                 预测正    预测负
-实际正           TP        FN    ← 漏报（假阴性）
+实际正           TP        FN    ← 漏报更危险！
 实际负           FP        TN
-                 ↑
-              误报（假阳性）
 ```
 
 ```python
@@ -59,15 +54,15 @@ print(confusion_matrix(y_true, y_pred))
 print(classification_report(y_true, y_pred))
 ```
 
-### 指标选择指南
+### 指标选择
 
-| 场景 | 指标 | 原因 |
-|------|------|------|
+| 场景 | 指标 | 为什么 |
+|------|------|--------|
 | 均衡分类 | 准确率 | 简单直观 |
 | 垃圾邮件检测 | 精确率 | 不想误删正常邮件 |
 | 疾病筛查 | 召回率 | 不想漏诊 |
 | 不均衡数据 | F1 / AUC | 综合考虑 |
-| 回归任务 | R² / MSE | 衡量拟合程度 |
+| 回归 | R² / MSE | 衡量拟合 |
 
 ### ROC 与 AUC
 
@@ -92,6 +87,7 @@ print(f"MSE: {mean_squared_error(y_true, y_pred):.3f}")
 print(f"R²:  {r2_score(y_true, y_pred):.3f}")
 ```
 
-### 下一步
+### 相关页面
 
-- [深度学习入门](/tutorials/deep-learning/) — 进入神经网络
+- [特征工程](/tutorials/ml-basics/06-feature-engineering/) — 上一步
+- [深度学习入门](/tutorials/deep-learning/) — 下一步
