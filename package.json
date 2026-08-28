@@ -15,6 +15,7 @@
     "astro": "^7.1.6",
     "csso": "^5.0.5",
     "katex": "^0.18.4",
+    "mermaid": "^11.17.2",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
     "sharp": "^0.35.3",
