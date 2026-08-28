@@ -1,105 +1,147 @@
 ---
-title: 机器学习基础
-description: 从零开始学习机器学习核心概念和经典算法
+title: 线性回归与梯度下降
+description: 从零实现线性回归——理解机器学习最基础的算法
 ---
 
-## 什么是机器学习？
+## 线性回归
 
-Tom Mitchell (1998) 的定义：
+线性回归是最简单的机器学习算法，但包含了所有核心概念：模型、损失函数、优化。
 
-> 一个计算机程序从经验 E 中学习，解决任务 T，性能度量 P。当且仅当有了经验 E 后，程序在任务 T 上的性能 P 随之提升。
+### 模型
 
-通俗地说：**让机器从数据中自动发现规律，而不是人工编写规则**。
-
-### 三种学习范式
-
-| 范式 | 数据 | 目标 | 例子 |
-|------|------|------|------|
-| 监督学习 | 有标签 (x, y) | 学习 x→y 的映射 | 分类、回归 |
-| 无监督学习 | 无标签 (x) | 发现数据中的结构 | 聚类、降维 |
-| 强化学习 | 环境交互 | 最大化累积奖励 | 游戏、机器人 |
-
-### 线性回归：最简单的例子
-
-给定房屋面积，预测价格。模型假设：
+假设目标值 $y$ 是特征 $x$ 的线性组合：
 
 $$
-y = wx + b
+\hat{y} = w_0 + w_1x_1 + w_2x_2 + \cdots + w_nx_n
 $$
 
-其中 $w$ 是权重，$b$ 是偏置。学习的目标是找到最优的 $w$ 和 $b$。
+向量形式：$\hat{y} = Xw$，其中 $X$ 是 $m \times n$ 的特征矩阵，$w$ 是 $n$ 维权值向量。
+
+### 损失函数：均方误差 (MSE)
+
+$$
+J(w) = \frac{1}{m}\sum_{i=1}^{m}(\hat{y}^{(i)} - y^{(i)})^2 = \frac{1}{m}\|Xw - y\|^2
+$$
+
+### 方法一：解析解（正规方程）
+
+令梯度为零，直接求解：
+
+$$
+w = (X^TX)^{-1}X^Ty
+$$
 
 ```python
 import numpy as np
 
-# 数据：房屋面积 (m²) 和价格 (万元)
-X = np.array([50, 60, 80, 100, 120, 150])
-y = np.array([150, 180, 240, 300, 360, 450])
+# 生成数据：y = 3x + 2 + 噪声
+np.random.seed(42)
+X = np.random.rand(100, 1) * 10
+y = 3 * X.ravel() + 2 + np.random.randn(100) * 2
 
-# 最小二乘法：解析解
-X_b = np.c_[np.ones((len(X), 1)), X]  # 加偏置列
+# 加偏置列
+X_b = np.c_[np.ones((len(X), 1)), X]
+
+# 正规方程
 w = np.linalg.inv(X_b.T @ X_b) @ X_b.T @ y
-
-print(f"w0 (偏置) = {w[0]:.1f}, w1 (权重) = {w[1]:.1f}")
-# 输出: w0 (偏置) = 0.0, w1 (权重) ≈ 3.0
-# 模型: 价格 ≈ 3 × 面积
-
-# 预测
-area_new = 90
-price = w[0] + w[1] * area_new
-print(f"面积 {area_new}m² 的预测价格: {price:.0f} 万元")
+print(f"w0 (偏置) = {w[0]:.2f}, w1 (斜率) = {w[1]:.2f}")
+# w0 ≈ 2, w1 ≈ 3
 ```
 
-### 梯度下降：当数据量大时
+### 方法二：梯度下降
 
-当数据量巨大时，解析解计算量太大。梯度下降每次用一小步更新参数：
+当特征很多时，解析解求逆矩阵太慢。梯度下降每次迭代更新参数：
 
 $$
-w := w - \alpha \frac{\partial L}{\partial w}
+w := w - \alpha \nabla J(w)
 $$
 
-其中 $\alpha$ 是学习率，$L$ 是损失函数。
+其中 $\nabla J(w) = \frac{2}{m}X^T(Xw - y)$
 
 ```python
-# 梯度下降实现线性回归
-w, b = 0.0, 0.0
-lr = 0.0001
-epochs = 1000
+def gradient_descent(X, y, lr=0.01, epochs=1000):
+    m, n = X.shape
+    w = np.zeros(n)
+    history = []
 
-for epoch in range(epochs):
-    # 预测
-    y_pred = w * X + b
-    # 均方误差
-    loss = np.mean((y_pred - y) ** 2)
-    # 梯度
-    dw = np.mean(2 * (y_pred - y) * X)
-    db = np.mean(2 * (y_pred - y))
-    # 更新
-    w -= lr * dw
-    b -= lr * db
+    for epoch in range(epochs):
+        # 预测
+        y_pred = X @ w
+        # 梯度
+        grad = (2 / m) * X.T @ (y_pred - y)
+        # 更新
+        w -= lr * grad
+        # 记录损失
+        loss = np.mean((y_pred - y) ** 2)
+        history.append(loss)
 
-    if epoch % 200 == 0:
-        print(f"Epoch {epoch}: loss={loss:.1f}, w={w:.2f}, b={b:.1f}")
+        if epoch % 200 == 0:
+            print(f"Epoch {epoch:4d}: loss = {loss:.4f}")
 
-print(f"\n最终模型: y = {w:.2f}x + {b:.1f}")
+    return w, history
+
+# 标准化特征（梯度下降需要）
+X_std = (X - X.mean()) / X.std()
+X_b_std = np.c_[np.ones((len(X_std), 1)), X_std]
+
+w_gd, history = gradient_descent(X_b_std, y, lr=0.1, epochs=1000)
+print(f"\n梯度下降结果: w0 = {w_gd[0]:.2f}, w1 = {w_gd[1]:.2f}")
 ```
 
-### 过拟合与欠拟合
+### 学习率的影响
 
-| 现象 | 表现 | 原因 | 解决 |
-|------|------|------|------|
-| 欠拟合 | 训练集上表现就差 | 模型太简单 | 增加特征、复杂度 |
-| 过拟合 | 训练集好，测试集差 | 模型太复杂 | 正则化、更多数据 |
+```python
+import matplotlib.pyplot as plt
 
-$$
-\text{过拟合的标志：} \quad \text{训练误差} \ll \text{测试误差}
-$$
+for lr in [0.001, 0.01, 0.1, 0.5]:
+    _, history = gradient_descent(X_b_std, y, lr=lr, epochs=100)
+    plt.plot(history, label=f'lr={lr}')
 
-### 本系列
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.yscale('log')
+plt.title('不同学习率下的收敛速度')
+plt.show()
+```
 
-- [Python 基础](/tutorials/ml-basics/) — 前置知识
-- [经典算法](/tutorials/ml-basics/04-classic-algorithms/) — 逻辑回归、决策树、KNN
+### 三种梯度下降变体
+
+| 类型 | 每步数据量 | 特点 |
+|------|-----------|------|
+| 批量梯度下降 | 全部数据 | 稳定，但慢 |
+| 随机梯度下降 (SGD) | 1 条数据 | 快，但不稳定 |
+| 小批量梯度下降 | 32-256 条 | 折中，最常用 |
+
+```python
+# 小批量 SGD
+def sgd(X, y, lr=0.01, epochs=100, batch_size=16):
+    m = len(X)
+    w = np.zeros(X.shape[1])
+    for epoch in range(epochs):
+        # 随机打乱
+        idx = np.random.permutation(m)
+        X_shuffled, y_shuffled = X[idx], y[idx]
+        # 小批量迭代
+        for i in range(0, m, batch_size):
+            X_batch = X_shuffled[i:i+batch_size]
+            y_batch = y_shuffled[i:i+batch_size]
+            grad = (2 / len(X_batch)) * X_batch.T @ (X_batch @ w - y_batch)
+            w -= lr * grad
+    return w
+```
+
+### 线性回归的局限
+
+- 假设特征和目标之间是线性关系
+- 对异常值敏感
+- 特征之间高度相关时（多重共线性）不稳定
+
+### 总结
+
+线性回归虽然简单，但涵盖了机器学习的完整流程：**模型定义 → 损失函数 → 梯度优化 → 预测**。理解了这个流程，就能理解所有更复杂的模型。
 
 ### 相关页面
 
-- [深度学习入门](/tutorials/deep-learning/) — 从这里进入神经网络
+- [经典算法](/tutorials/ml-basics/04-classic-algorithms/) — 逻辑回归、决策树
+- [模型评估](/tutorials/ml-basics/07-model-evaluation/) — 如何评估回归效果
