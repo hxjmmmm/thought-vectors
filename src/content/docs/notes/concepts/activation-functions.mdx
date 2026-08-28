@@ -1,81 +1,86 @@
 ---
 title: 激活函数
-description: ReLU、GELU、SwiGLU——神经网络的非线性来源
+description: ReLU、GELU、SwiGLU——神经网络的非线性来源，深度理解每种激活函数的选择
 ---
 
 ## 激活函数
 
-没有激活函数，多层神经网络等价于单层线性变换。激活函数提供**非线性**，让网络能拟合任意函数。
-
-### 为什么需要非线性？
+没有激活函数，多层神经网络等价于单层线性变换。激活函数提供**非线性**，让网络能拟合任意复杂函数。
 
 $$
-\text{无激活: } W_2(W_1x) = Wx \quad \text{——还是线性的}
-$$
-$$
-\text{有激活: } W_2(f(W_1x)) \quad \text{——可以拟合任意函数}
+\text{无激活: } W_2(W_1x) = W_{\text{eq}}x \quad \text{——还是线性的！}
 $$
 
-### 常用激活函数
+### 为什么 Sigmoid 被淘汰了？
+
+Sigmoid 曾经是标准选择，但有两个致命问题：
+
+1. **梯度消失**：当 $|x| > 3$ 时，梯度 $\sigma'(x) < 0.01$，深层网络几乎无法学习
+2. **非零中心**：输出恒为正，导致梯度更新锯齿形震荡
 
 ```python
 import torch
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
-import numpy as np
 
-x = torch.linspace(-4, 4, 200)
-
-# Sigmoid：输出 (0, 1)，用于二分类输出层
-sigmoid = torch.sigmoid(x)
-
-# Tanh：输出 (-1, 1)，零中心
-tanh = torch.tanh(x)
-
-# ReLU：最常用，简单高效
-relu = F.relu(x)
-
-# GELU：Transformer 标配
-gelu = F.gelu(x)
-
-# SwiGLU：Llama 等现代模型使用
-swish = x * torch.sigmoid(x)
-```
-
-### 对比
-
-| 函数 | 公式 | 特点 |
-|------|------|------|
-| Sigmoid | $\sigma(x) = \frac{1}{1+e^{-x}}$ | 有梯度消失，仅用于输出层 |
-| Tanh | $\tanh(x)$ | 零中心，仍有梯度消失 |
-| ReLU | $\max(0, x)$ | 简单高效，最常用 |
-| GELU | $x \cdot \Phi(x)$ | Transformer 标配 |
-| SwiGLU | $x \cdot \sigma(\beta x) \cdot W$ | Llama 使用，性能更好 |
-
-### 梯度消失问题
-
-```python
-# Sigmoid 在 |x| > 3 时梯度接近 0
 x = torch.tensor([5.0], requires_grad=True)
 y = torch.sigmoid(x)
 y.backward()
-print(f"Sigmoid'(5.0) = {x.grad.item():.6f}")  # ≈ 0.0066，几乎为 0
+print(f"Sigmoid'(5.0) = {x.grad.item():.6f}")  # ≈ 0.0066
 
-# ReLU 在 x > 0 时梯度恒为 1
 x2 = torch.tensor([5.0], requires_grad=True)
 y2 = F.relu(x2)
 y2.backward()
 print(f"ReLU'(5.0) = {x2.grad.item()}")  # 1.0
 ```
 
+### ReLU 的死亡神经元问题
+
+ReLU 在 $x < 0$ 时输出和梯度都为 0。如果学习率太大，可能导致神经元永久"死亡"：
+
+```python
+# 模拟死亡神经元
+x = torch.randn(1000, 10)
+w = torch.randn(10, 10) * -10  # 负权重导致输出恒为负
+out = F.relu(x @ w)
+dead_ratio = (out.sum(dim=0) == 0).float().mean()
+print(f"死亡神经元比例: {dead_ratio:.1%}")
+```
+
+### GELU：高斯误差线性单元
+
+GELU 是 Transformer 的标准选择。它给负值一个非零输出，解决了 ReLU 的死亡问题：
+
+$$
+\text{GELU}(x) = x \cdot \Phi(x) = x \cdot \frac{1}{2}\left[1 + \text{erf}\left(\frac{x}{\sqrt{2}}\right)\right]
+$$
+
+近似公式（GPT-2 使用）：
+
+$$
+\text{GELU}(x) \approx 0.5x\left(1 + \tanh\left[\sqrt{\frac{2}{\pi}}(x + 0.044715x^3)\right]\right)
+$$
+
+### SwiGLU：现代大模型的选择
+
+SwiGLU 是 Llama 使用的激活函数，在 GELU 基础上进一步改进：
+
+$$
+\text{SwiGLU}(x) = (xW_1 \odot \text{SiLU}(xW_2))W_3
+$$
+
+其中 $\text{SiLU}(x) = x \cdot \sigma(x)$，也称为 Swish。
+
 ### 选择指南
 
-- 隐藏层：**ReLU**（简单场景）或 **GELU**（Transformer）
-- 二分类输出：**Sigmoid**
-- 多分类输出：**Softmax**
-- 回归输出：不用激活函数
+| 场景 | 推荐 | 原因 |
+|------|------|------|
+| CNN 隐藏层 | ReLU | 简单高效 |
+| Transformer | GELU | 平滑、性能好 |
+| 大模型 (Llama等) | SwiGLU | 最新最优 |
+| 二分类输出 | Sigmoid | 输出概率 |
+| 多分类输出 | Softmax | 概率分布 |
 
 ### 相关页面
 
 - [深度学习入门](/tutorials/deep-learning/) — 激活函数在神经网络中的位置
-- [Attention](/notes/concepts/attention/) — GELU 在 Transformer 中的使用
+- [反向传播](/notes/concepts/backpropagation/) — 激活函数的梯度计算
