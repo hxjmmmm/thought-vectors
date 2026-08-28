@@ -1,0 +1,9 @@
+---
+// 扩展 Starlight 默认 Head，添加 Mermaid 渲染
+---
+
+import DefaultHead from '@astrojs/starlight/components/Head.astro';
+import MermaidInit from '../MermaidInit.astro';
+
+<DefaultHead {...Astro.props} />
+<MermaidInit />
