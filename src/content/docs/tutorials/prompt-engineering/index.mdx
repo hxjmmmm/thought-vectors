@@ -111,6 +111,77 @@ print(result)  # 正面
 | 指令遗忘 | 长对话中忽略早期指令 | 在结尾重复关键要求 |
 | 格式错误 | 输出格式不符合要求 | 用 JSON schema 约束 |
 
+### 高级技巧
+
+#### 结构化输出
+
+```python
+from openai import OpenAI
+client = OpenAI()
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "列出 3 本 AI 书籍"}],
+    response_format={
+        "type": "json_schema",
+        "json_schema": {
+            "name": "books",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "books": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": {"type": "string"},
+                                "author": {"type": "string"},
+                                "year": {"type": "integer"},
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+)
+print(response.choices[0].message.content)
+```
+
+#### 自洽性（Self-Consistency）
+
+同一问题多次采样，取多数答案：
+
+```python
+def self_consistency(prompt, n=5):
+    answers = []
+    for _ in range(n):
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,  # 非零温度产生多样性
+        )
+        answers.append(response.choices[0].message.content)
+    # 取出现最多的答案
+    from collections import Counter
+    return Counter(answers).most_common(1)[0][0]
+```
+
+#### Tree of Thoughts
+
+让模型探索多条推理路径，选择最优：
+
+```
+问题: 如何用 3 升和 5 升的桶量出 4 升水？
+
+思路 1: 装满 5 升 → 倒入 3 升 → 5 升桶剩 2 升 → ...
+思路 2: 装满 3 升 → 倒入 5 升 → 再装满 3 升 → ...
+思路 3: ...
+
+评估: 思路 1 最短，思路 2 也能达到...
+最佳: 思路 1
+```
+
 ### 相关页面
 
 - [大模型原理](/tutorials/llm/) — 理解模型为什么会对 prompt 做出反应

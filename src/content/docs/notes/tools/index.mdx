@@ -3,17 +3,31 @@ title: 工具生态
 description: AI 开发常用工具与框架，附使用示例
 ---
 
-## 核心工具栈
+## AI 开发工具栈
+
+```mermaid
+flowchart TD
+    A[AI 开发工具栈] --> B[模型训练]
+    A --> C[模型推理]
+    A --> D[应用开发]
+    A --> E[数据处理]
+    B --> B1[PyTorch]
+    B --> B2[HuggingFace]
+    C --> C1[vLLM]
+    C --> C2[Ollama]
+    D --> D1[LangChain]
+    D --> D2[LlamaIndex]
+    E --> E1[Pandas]
+    E --> E2[Chroma]
+```
 
 ### PyTorch — 深度学习框架
-
-绝大多数 AI 研究基于 PyTorch。提供了灵活的自动微分和 GPU 加速。
 
 ```python
 import torch
 import torch.nn as nn
 
-# 定义一个简单的 MLP
+# 定义一个 MLP
 class MLP(nn.Module):
     def __init__(self):
         super().__init__()
@@ -23,66 +37,52 @@ class MLP(nn.Module):
             nn.Dropout(0.1),
             nn.Linear(256, 10),
         )
-
     def forward(self, x):
         return self.layers(x)
 
 model = MLP()
-x = torch.randn(4, 768)  # batch=4
-output = model(x)
-print(output.shape)  # torch.Size([4, 10])
+x = torch.randn(4, 768)
+print(model(x).shape)  # (4, 10)
 ```
 
-### HuggingFace Transformers — 预训练模型库
+### HuggingFace Transformers
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# 加载模型和分词器
-model_name = "gpt2"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained("gpt2")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-# 生成文本
 inputs = tokenizer("The future of AI is", return_tensors="pt")
 outputs = model.generate(**inputs, max_new_tokens=30)
 print(tokenizer.decode(outputs[0]))
 ```
 
-### LangChain — LLM 应用框架
+### LangChain
 
 ```python
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 
 llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
-
 prompt = ChatPromptTemplate.from_messages([
     ("system", "你是一个 AI 技术专家。"),
     ("human", "用一句话解释 {concept}"),
 ])
-
 chain = prompt | llm
 response = chain.invoke({"concept": "Transformer"})
 print(response.content)
 ```
 
-### Ollama — 本地运行大模型
+### Ollama — 本地运行
 
 ```bash
-# 安装后下载模型
 ollama pull llama3.2
-
-# 命令行使用
 ollama run llama3.2 "解释什么是注意力机制"
-
-# Python 调用
-pip install ollama
 ```
 
 ```python
 import ollama
-
 response = ollama.chat(
     model="llama3.2",
     messages=[{"role": "user", "content": "什么是 Transformer？"}],
@@ -90,27 +90,24 @@ response = ollama.chat(
 print(response["message"]["content"])
 ```
 
-### 向量数据库
+### 向量数据库：Chroma
 
 ```python
 import chromadb
 
-# 创建 Chroma 客户端
 client = chromadb.Client()
 collection = client.create_collection("docs")
 
-# 添加文档
 collection.add(
     documents=["Transformer 是 Attention 机制的架构", "CNN 用于图像处理"],
     ids=["doc1", "doc2"],
 )
 
-# 查询
 results = collection.query(
     query_texts=["什么是 Attention"],
     n_results=1,
 )
-print(results["documents"][0])  # ['Transformer 是 Attention 机制的架构']
+print(results["documents"][0])
 ```
 
 ### 工具选择指南
@@ -127,4 +124,4 @@ print(results["documents"][0])  # ['Transformer 是 Attention 机制的架构']
 ### 相关页面
 
 - [核心概念](/notes/concepts/) — 工具背后的技术原理
-- [模型族谱](/notes/models/) — 你用这些工具运行的模型
+- [模型族谱](/notes/models/) — 用这些工具运行的模型
