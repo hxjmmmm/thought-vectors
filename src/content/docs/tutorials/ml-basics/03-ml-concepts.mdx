@@ -1,0 +1,129 @@
+---
+title: 机器学习概念
+description: 监督学习、无监督学习、过拟合——核心概念入门
+---
+
+## 机器学习核心概念
+
+### 三种学习范式
+
+#### 监督学习
+
+有标签数据 $(x, y)$，学习 $x \to y$ 的映射。
+
+| 任务类型 | 输出 | 例子 |
+|----------|------|------|
+| 分类 | 离散类别 | 垃圾邮件检测、图像识别 |
+| 回归 | 连续数值 | 房价预测、温度预测 |
+
+```python
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+
+# 生成分类数据
+X, y = make_classification(n_samples=500, n_features=4, random_state=42)
+
+# 划分训练集和测试集
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# 训练
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# 评估
+print(f"训练集准确率: {model.score(X_train, y_train):.3f}")
+print(f"测试集准确率: {model.score(X_test, y_test):.3f}")
+```
+
+#### 无监督学习
+
+无标签数据，发现数据中的结构。
+
+```python
+from sklearn.datasets import make_blobs
+from sklearn.cluster import KMeans
+
+# 生成聚类数据
+X, _ = make_blobs(n_samples=300, centers=3, random_state=42)
+
+# K-Means 聚类
+kmeans = KMeans(n_clusters=3, random_state=42)
+labels = kmeans.fit_predict(X)
+
+print(f"聚类中心:\n{kmeans.cluster_centers_}")
+```
+
+#### 强化学习
+
+智能体与环境交互，通过奖励信号学习最优策略。
+
+### 核心概念
+
+#### 偏差-方差权衡
+
+| 概念 | 含义 | 表现 |
+|------|------|------|
+| 偏差 (Bias) | 模型预测与真实值的系统误差 | 欠拟合 |
+| 方差 (Variance) | 模型对训练数据波动的敏感度 | 过拟合 |
+
+$$
+\text{期望误差} = \text{偏差}^2 + \text{方差} + \text{不可约误差}
+$$
+
+#### 过拟合 vs 欠拟合
+
+```python
+import numpy as np
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import make_pipeline
+
+# 生成带噪声的数据
+np.random.seed(42)
+X = np.linspace(0, 10, 20).reshape(-1, 1)
+y = np.sin(X).ravel() + np.random.randn(20) * 0.2
+
+# 欠拟合：一次多项式（太简单）
+model1 = make_pipeline(PolynomialFeatures(1), LinearRegression())
+model1.fit(X, y)
+print(f"线性 (欠拟合): R² = {model1.score(X, y):.3f}")
+
+# 过拟合：15 次多项式（太复杂）
+model15 = make_pipeline(PolynomialFeatures(15), LinearRegression())
+model15.fit(X, y)
+print(f"15 次 (过拟合): R² = {model15.score(X, y):.3f}")
+
+# 适中：3 次多项式
+model3 = make_pipeline(PolynomialFeatures(3), LinearRegression())
+model3.fit(X, y)
+print(f"3 次 (适中): R² = {model3.score(X, y):.3f}")
+```
+
+#### 交叉验证
+
+将数据分成 K 份，轮流用 K-1 份训练，1 份验证：
+
+```python
+from sklearn.model_selection import cross_val_score
+
+scores = cross_val_score(LogisticRegression(), X, y, cv=5)
+print(f"5 折交叉验证: {scores}")
+print(f"平均准确率: {scores.mean():.3f} ± {scores.std():.3f}")
+```
+
+### 评估指标
+
+| 指标 | 公式 | 适用 |
+|------|------|------|
+| 准确率 | $\frac{TP+TN}{Total}$ | 均衡分类 |
+| 精确率 | $\frac{TP}{TP+FP}$ | 减少误报 |
+| 召回率 | $\frac{TP}{TP+FN}$ | 减少漏报 |
+| F1 | $2 \cdot \frac{P \cdot R}{P+R}$ | 综合指标 |
+
+### 相关页面
+
+- [数学基础](/tutorials/ml-basics/02-math-basics/) — 前置知识
+- [经典算法](/tutorials/ml-basics/04-classic-algorithms/) — 下一步：实现算法
