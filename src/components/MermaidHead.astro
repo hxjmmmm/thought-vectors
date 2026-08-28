@@ -1,0 +1,29 @@
+<!-- 自定义 Head，注入 Mermaid 渲染 -->
+<meta name="generator" content="Astro + Starlight" />
+<slot />
+<script>
+  import mermaid from 'mermaid';
+
+  const isDark = () =>
+    document.documentElement.dataset.theme === 'dark' ||
+    (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+
+  mermaid.initialize({ startOnLoad: false, theme: isDark() ? 'dark' : 'default' });
+
+  function render() {
+    document.querySelectorAll('pre code.language-mermaid').forEach((el) => {
+      if (el.dataset.rendered) return;
+      el.dataset.rendered = '1';
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = el.textContent;
+      el.parentElement.replaceWith(div);
+    });
+    try { mermaid.run(); } catch (e) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', render);
+  document.addEventListener('astro:page-load', render);
+  setTimeout(render, 500);
+  setTimeout(render, 1500);
+</script>

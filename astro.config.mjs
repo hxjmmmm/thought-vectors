@@ -21,6 +21,30 @@ export default defineConfig({
       description: 'AI 知识库与技术教程 — 思想的高维空间',
       defaultLocale: 'zh-CN',
       customCss: ['./src/styles/global.css'],
+      head: [
+        {
+          tag: 'script',
+          attrs: { src: 'https://unpkg.com/mermaid@11/dist/mermaid.min.js' },
+        },
+        {
+          tag: 'script',
+          content: `
+            document.addEventListener('DOMContentLoaded', () => {
+              if (typeof mermaid === 'undefined') return;
+              const isDark = document.documentElement.dataset.theme === 'dark' ||
+                (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+              mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' });
+              document.querySelectorAll('pre code.language-mermaid').forEach(el => {
+                const div = document.createElement('div');
+                div.className = 'mermaid';
+                div.textContent = el.textContent;
+                el.parentElement.replaceWith(div);
+              });
+              mermaid.run();
+            });
+          `,
+        },
+      ],
       social: [
         {
           icon: 'github',
