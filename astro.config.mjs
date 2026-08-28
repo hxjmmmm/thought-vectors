@@ -120,7 +120,23 @@ export default defineConfig({
           items: [
             {
               label: '核心概念',
-              items: [{ autogenerate: { directory: 'notes/concepts' } }],
+              items: [
+                { label: '核心概念总览', slug: 'notes/concepts' },
+                { label: '注意力机制', slug: 'notes/concepts/attention' },
+                { label: 'Multi-Head Attention', slug: 'notes/concepts/multi-head-attention' },
+                { label: 'Embedding', slug: 'notes/concepts/embedding' },
+                { label: 'Tokenization', slug: 'notes/concepts/tokenization' },
+                { label: '位置编码', slug: 'notes/concepts/positional-encoding' },
+                { label: '激活函数', slug: 'notes/concepts/activation-functions' },
+                { label: '反向传播', slug: 'notes/concepts/backpropagation' },
+                { label: 'Layer Normalization', slug: 'notes/concepts/layer-norm' },
+                { label: '损失函数', slug: 'notes/concepts/loss-functions' },
+                { label: '优化器', slug: 'notes/concepts/optimizers' },
+                { label: '正则化', slug: 'notes/concepts/regularization' },
+                { label: 'KV Cache', slug: 'notes/concepts/kv-cache' },
+                { label: 'Flash Attention', slug: 'notes/concepts/flash-attention' },
+                { label: '模型量化', slug: 'notes/concepts/quantization' },
+              ],
             },
             {
               label: '模型族谱',
