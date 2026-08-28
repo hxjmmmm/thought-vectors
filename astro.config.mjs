@@ -107,6 +107,7 @@ export default defineConfig({
               items: [
                 { label: 'Prompt Engineering', slug: 'tutorials/prompt-engineering' },
                 { label: 'RAG 与 Agent 开发', slug: 'tutorials/rag-agent' },
+                { label: 'Agent 开发实战', slug: 'tutorials/rag-agent/agent-development' },
                 { label: '模型部署', slug: 'tutorials/rag-agent/deployment' },
               ],
             },
