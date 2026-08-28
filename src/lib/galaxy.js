@@ -28,7 +28,7 @@ export function createGalaxy(container, opts = {}) {
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.setClearColor(0x000000, 0);
   container.appendChild(renderer.domElement);
 
@@ -48,7 +48,7 @@ export function createGalaxy(container, opts = {}) {
 
   for (const node of nodes) {
     const color = colors[nodes.indexOf(node) % colors.length];
-    const geo = new THREE.SphereGeometry(node.size, 24, 24);
+    const geo = new THREE.SphereGeometry(node.size, 16, 16);
     const mat = new THREE.MeshStandardMaterial({
       color, emissive: color, emissiveIntensity: 0.7,
       roughness: 0.3, metalness: 0.2,
@@ -110,7 +110,7 @@ export function createGalaxy(container, opts = {}) {
   scene.add(linkGroup);
 
   // --- 粒子 ---
-  const pCount = 80;
+  const pCount = 40;
   const pGeo = new THREE.BufferGeometry();
   const pPos = new Float32Array(pCount * 3);
   for (let i = 0; i < pCount; i++) {
@@ -192,10 +192,14 @@ export function createGalaxy(container, opts = {}) {
 
   // --- 动画循环 ---
   let animId;
+  let lastFrame = 0;
+  const FRAME_INTERVAL = 1000 / 30; // 30 FPS
   const clock = new THREE.Clock();
-  function animate() {
+  function animate(now = 0) {
     animId = requestAnimationFrame(animate);
-    const dt = Math.min(clock.getDelta(), 0.1);
+    if (now - lastFrame < FRAME_INTERVAL) return;
+    lastFrame = now;
+    const dt = Math.min(clock.getDelta(), 0.1) * (FRAME_INTERVAL / 16.67);
     const t = performance.now() * 0.001;
 
     if (!dragging) mx += dt * 0.03;
